@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{% if event %}Edit{% else %}Create{% endif %} Event</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map { height: 300px; margin-top: 10px; }
+  </style>
+</head>
+<body class="p-4">
+  <h2>{% if event %}Edit{% else %}Create{% endif %} Event</h2>
+  <form method="POST">
+    <div class="mb-3">
+      <label class="form-label">Event Title</label>
+      <input type="text" name="title" class="form-control" required value="{{ event.title if event else '' }}">
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Description</label>
+      <textarea name="description" class="form-control">{{ event.description if event else '' }}</textarea>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-md-6">
+        <label class="form-label">Start DateTime</label>
+        <input type="datetime-local" name="start_datetime" class="form-control" required
+               value="{{ event.start_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">End DateTime</label>
+        <input type="datetime-local" name="end_datetime" class="form-control" required
+               value="{{ event.end_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}">
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Category</label>
+      <select name="category" class="form-select">
+        {% for cat in categories %}
+        <option value="{{ cat }}" {% if event and event.category==cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label">Location</label>
+      <input type="text" id="locationInput" name="location" class="form-control" required
+             value="{{ event.location if event else '' }}">
+      <div id="map"></div>
+    </div>
+
+    <div class="form-check mb-3">
+      <input type="checkbox" name="publish" class="form-check-input" id="publishCheck" {% if event and event.status=='published' %}checked{% endif %}>
+      <label class="form-check-label" for="publishCheck">Publish Event</label>
+    </div>
+
+    <button class="btn btn-success">{% if event %}Update{% else %}Create{% endif %} Event</button>
+    <a href="{{ url_for('organizer_home') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Initialize map
+      var map = L.map('map').setView([20.5937, 78.9629], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+
+      var marker;
+
+      function updateMap(location) {
+        if(!location) return;
+        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(location))
+          .then(resp => resp.json())
+          .then(data => {
+            if(data.length > 0) {
+              var lat = data[0].lat;
+              var lon = data[0].lon;
+              map.setView([lat, lon], 13);
+              if(marker) map.removeLayer(marker);
+              marker = L.marker([lat, lon], {draggable:true}).addTo(map)
+                       .bindPopup(location).openPopup();
+
+              // Update input if marker dragged
+              marker.on('dragend', function(e){
+                var pos = e.target.getLatLng();
+                document.getElementById('locationInput').value = pos.lat + ',' + pos.lng;
+              });
+            }
+          });
+      }
+
+      var locationInput = document.getElementById('locationInput');
+
+      // If input already has a value, use it to initialize the map
+      if(locationInput.value.trim() !== '') {
+        updateMap(locationInput.value);
+      }
+
+      // Update map when typing
+      var timeout;
+      locationInput.addEventListener('input', function(){
+        clearTimeout(timeout);
+        var loc = this.value;
+        timeout = setTimeout(function(){ updateMap(loc); }, 500);
+      });
+    });
+  </script>
+</body>
+</html>
