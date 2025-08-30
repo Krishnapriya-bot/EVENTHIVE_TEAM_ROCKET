@@ -4,238 +4,212 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ 'Edit Event' if event else 'Create Event' }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='create.css') }}">
 </head>
-<body class="bg-gray-900 text-white min-h-screen">
-    <div class="container mx-auto px-4 py-8">
-        <div class="max-w-6xl mx-auto">
-            <!-- Header -->
-            <div class="flex justify-between items-center mb-8">
-                <h1 class="text-3xl font-bold">
-                    <i class="fas fa-calendar-plus mr-3"></i>
-                    {{ 'Edit Event' if event else 'Add New Event' }}
-                </h1>
-                <a href="{{ url_for('organizer_home') }}" 
-                   class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors">
-                    <i class="fas fa-arrow-left mr-2"></i>Back
-                </a>
-            </div>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+          <div class="logo">EventHive</div>
 
-            <form method="POST" enctype="multipart/form-data" class="space-y-8">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    
-                    <!-- Left Column - Event Details -->
-                    <div class="space-y-6">
-                        <!-- Basic Information -->
-                        <div class="bg-gray-800 rounded-lg p-6">
-                            <h3 class="text-xl font-semibold mb-6 text-green-400">
-                                <i class="fas fa-info-circle mr-2"></i>Event Information
-                            </h3>
-                            
-                            <div class="space-y-4">
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">Event Name *</label>
-                                    <input type="text" name="title" required 
-                                           value="{{ event.title if event else '' }}"
-                                           class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
-                                           placeholder="Enter event name">
-                                </div>
+            <h1>
+                <i class="fas fa-calendar-plus"></i>
+                {{ 'Edit Event' if event else 'Add New Event' }}
+            </h1>
+            <a href="{{ url_for('organizer_home') }}" class="back-btn">
+                <i class="fas fa-arrow-left"></i>Back
+            </a>
+        </div>
 
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">Description</label>
-                                    <textarea name="description" rows="4" 
-                                              class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
-                                              placeholder="Describe your event...">{{ event.description if event else '' }}</textarea>
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">Location *</label>
-                                    <input type="text" name="location" required 
-                                           value="{{ event.location if event else '' }}"
-                                           class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
-                                           placeholder="Event venue or address">
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">Category *</label>
-                                    <select name="category" required 
-                                            class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white">
-                                        <option value="">Select Category</option>
-                                        {% for cat in categories %}
-                                            <option value="{{ cat }}" {{ 'selected' if event and event.category == cat else '' }}>
-                                                {{ cat }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-grid">
+                <!-- Left Column -->
+                <div class="left-column">
+                    <!-- Basic Information -->
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-info-circle"></i>Event Information
+                        </h3>
+                        
+                        <div class="form-group">
+                            <label>Event Name *</label>
+                            <input type="text" name="title" required 
+                                   value="{{ event.title if event else '' }}"
+                                   placeholder="Enter event name">
                         </div>
 
-                        <!-- Date & Time Settings -->
-                        <div class="bg-gray-800 rounded-lg p-6">
-                            <h3 class="text-xl font-semibold mb-6 text-blue-400">
-                                <i class="fas fa-clock mr-2"></i>Date & Time
-                            </h3>
-                            
-                            <div class="space-y-4">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium mb-2">Start Date & Time *</label>
-                                        <input type="datetime-local" name="start_datetime" required 
-                                               value="{{ event.start_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}"
-                                               class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
-                                    </div>
+                        <div class="form-group">
+                            <label>Description</label>
+                            <textarea name="description" rows="4" 
+                                      placeholder="Describe your event...">{{ event.description if event else '' }}</textarea>
+                        </div>
 
-                                    <div>
-                                        <label class="block text-sm font-medium mb-2">End Date & Time *</label>
-                                        <input type="datetime-local" name="end_datetime" required 
-                                               value="{{ event.end_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}"
-                                               class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
-                                    </div>
-                                </div>
+                        <div class="form-group">
+                            <label>Location *</label>
+                            <input type="text" name="location" required 
+                                   value="{{ event.location if event else '' }}"
+                                   placeholder="Event venue or address">
+                        </div>
 
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-medium mb-2">Registration Start</label>
-                                        <input type="datetime-local" name="registration_start"
-                                               value="{{ event.registration_start.strftime('%Y-%m-%dT%H:%M') if event and event.registration_start else '' }}"
-                                               class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-sm font-medium mb-2">Registration End</label>
-                                        <input type="datetime-local" name="registration_end"
-                                               value="{{ event.registration_end.strftime('%Y-%m-%dT%H:%M') if event and event.registration_end else '' }}"
-                                               class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <label class="block text-sm font-medium mb-2">Maximum Attendees</label>
-                                    <input type="number" name="max_attendees" min="1"
-                                           value="{{ event.max_attendees if event and event.max_attendees else '' }}"
-                                           class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
-                                           placeholder="Leave empty for unlimited">
-                                </div>
-                            </div>
+                        <div class="form-group">
+                            <label>Category *</label>
+                            <select name="category" required>
+                                <option value="">Select Category</option>
+                                {% for cat in categories %}
+                                    <option value="{{ cat }}" {{ 'selected' if event and event.category == cat else '' }}>
+                                        {{ cat }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
 
-                    <!-- Right Column - Tickets & Settings -->
-                    <div class="space-y-6">
-                        <!-- Ticket Types -->
-                        {% if not event %}
-                        <div class="bg-gray-800 rounded-lg p-6">
-                            <h3 class="text-xl font-semibold mb-6 text-purple-400">
-                                <i class="fas fa-ticket-alt mr-2"></i>Ticket Types
-                            </h3>
-                            
-                            <div id="ticket-container" class="space-y-4">
-                                <!-- Default ticket type -->
-                                <div class="ticket-type bg-gray-700 p-4 rounded-lg">
-                                    <div class="grid grid-cols-3 gap-3">
-                                        <div>
-                                            <label class="block text-xs font-medium mb-1">Type</label>
-                                            <select name="ticket_type[]" class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm">
-                                                <option value="Standard">Standard</option>
-                                                <option value="VIP">VIP</option>
-                                                <option value="Early Bird">Early Bird</option>
-                                                <option value="Student">Student</option>
-                                                <option value="Group">Group</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-medium mb-1">Price (₹)</label>
-                                            <input type="number" name="ticket_price[]" step="0.01" min="0" 
-                                                   class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm">
-                                        </div>
-                                        <div>
-                                            <label class="block text-xs font-medium mb-1">Quantity</label>
-                                            <input type="number" name="ticket_quantity[]" min="1" 
-                                                   class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm">
-                                        </div>
+                    <!-- Date & Time -->
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-clock"></i>Date & Time
+                        </h3>
+                        
+                        <div class="date-grid">
+                            <div class="form-group">
+                                <label>Start Date & Time *</label>
+                                <input type="datetime-local" name="start_datetime" required 
+                                       value="{{ event.start_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label>End Date & Time *</label>
+                                <input type="datetime-local" name="end_datetime" required 
+                                       value="{{ event.end_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="date-grid">
+                            <div class="form-group">
+                                <label>Registration Start</label>
+                                <input type="datetime-local" name="registration_start"
+                                       value="{{ event.registration_start.strftime('%Y-%m-%dT%H:%M') if event and event.registration_start else '' }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Registration End</label>
+                                <input type="datetime-local" name="registration_end"
+                                       value="{{ event.registration_end.strftime('%Y-%m-%dT%H:%M') if event and event.registration_end else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Maximum Attendees</label>
+                            <input type="number" name="max_attendees" min="1"
+                                   value="{{ event.max_attendees if event and event.max_attendees else '' }}"
+                                   placeholder="Leave empty for unlimited">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="right-column">
+                    <!-- Ticket Types -->
+                    {% if not event %}
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-ticket-alt"></i>Ticket Types
+                        </h3>
+                        
+                        <div id="ticket-container">
+                            <div class="ticket-type">
+                                <div class="ticket-grid">
+                                    <div class="form-group">
+                                        <label>Type</label>
+                                        <select name="ticket_type[]">
+                                            <option value="Standard">Standard</option>
+                                            <option value="VIP">VIP</option>
+                                            <option value="Early Bird">Early Bird</option>
+                                            <option value="Student">Student</option>
+                                            <option value="Group">Group</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Price (₹)</label>
+                                        <input type="number" name="ticket_price[]" step="0.01" min="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Quantity</label>
+                                        <input type="number" name="ticket_quantity[]" min="1">
                                     </div>
                                 </div>
                             </div>
-                            
-                            <button type="button" onclick="addTicketType()" 
-                                    class="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
-                                <i class="fas fa-plus mr-2"></i>Add Another Ticket Type
-                            </button>
+                        </div>
+                        
+                        <button type="button" onclick="addTicketType()" class="add-ticket-btn">
+                            <i class="fas fa-plus"></i>Add Another Ticket Type
+                        </button>
+                    </div>
+                    {% endif %}
+
+                    <!-- Event Photo -->
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-image"></i>Event Photo
+                        </h3>
+                        
+                        {% if event and event.image_path %}
+                        <div class="existing-image">
+                            <img src="{{ url_for('static', filename=event.image_path) }}" alt="Event image">
                         </div>
                         {% endif %}
-
-                        <!-- Event Photo -->
-                        <div class="bg-gray-800 rounded-lg p-6">
-                            <h3 class="text-xl font-semibold mb-6 text-yellow-400">
-                                <i class="fas fa-image mr-2"></i>Event Photo
-                            </h3>
-                            
-                            {% if event and event.image_path %}
-                            <div class="mb-4">
-                                <img src="{{ url_for('static', filename=event.image_path) }}" 
-                                     alt="Event image" class="w-full h-40 object-cover rounded-lg">
-                            </div>
-                            {% endif %}
-                            
-                            <div class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
-                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-500 mb-4"></i>
-                                <p class="text-gray-400 mb-4">Upload event photo</p>
-                                <input type="file" name="image" accept="image/*" class="hidden" id="image-upload">
-                                <button type="button" onclick="document.getElementById('image-upload').click()" 
-                                        class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg transition-colors">
-                                    Choose Photo
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Publish Settings -->
-                        <div class="bg-gray-800 rounded-lg p-6">
-                            <h3 class="text-xl font-semibold mb-6 text-red-400">
-                                <i class="fas fa-cog mr-2"></i>Publish Settings
-                            </h3>
-                            
-                            <div class="flex items-center space-x-4">
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="publish" 
-                                           {{ 'checked' if event and event.status == 'published' else '' }}
-                                           class="mr-2 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-500">
-                                    <span>Publish Event</span>
-                                </label>
-                            </div>
-                            <p class="text-sm text-gray-400 mt-2">
-                                Uncheck to save as draft. Only published events are visible to attendees.
-                            </p>
+                        
+                        <div class="upload-area">
+                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                            <p>Upload event photo</p>
+                            <input type="file" name="image" accept="image/*" id="image-upload">
+                            <button type="button" onclick="document.getElementById('image-upload').click()" class="upload-btn">
+                                Choose Photo
+                            </button>
                         </div>
                     </div>
-                </div>
 
-                <!-- Action Buttons -->
-                <div class="flex justify-center space-x-4 pt-8">
-                    <button type="submit" 
-                            class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
-                        <i class="fas fa-save mr-2"></i>
-                        {{ 'Update Event' if event else 'Create Event' }}
-                    </button>
-                    
-                    <a href="{{ url_for('organizer_home') }}" 
-                       class="bg-gray-600 hover:bg-gray-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
-                        <i class="fas fa-times mr-2"></i>Cancel
-                    </a>
+                    <!-- Publish Settings -->
+                    <div class="card">
+                        <h3 class="card-title">
+                            <i class="fas fa-cog"></i>Publish Settings
+                        </h3>
+                        
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="publish" 
+                                       {{ 'checked' if event and event.status == 'published' else '' }}>
+                                <span>Publish Event</span>
+                            </label>
+                        </div>
+                        <p class="help-text">
+                            Uncheck to save as draft. Only published events are visible to attendees.
+                        </p>
+                    </div>
                 </div>
-            </form>
-        </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button type="submit" class="submit-btn">
+                    <i class="fas fa-save"></i>
+                    {{ 'Update Event' if event else 'Create Event' }}
+                </button>
+                
+                <a href="{{ url_for('organizer_home') }}" class="cancel-btn">
+                    <i class="fas fa-times"></i>Cancel
+                </a>
+            </div>
+        </form>
     </div>
 
     <!-- Flash Messages -->
     {% with messages = get_flashed_messages() %}
         {% if messages %}
-            <div class="fixed top-4 right-4 z-50">
+            <div class="flash-messages">
                 {% for message in messages %}
-                    <div class="bg-green-600 text-white px-6 py-3 rounded-lg mb-2 shadow-lg">
-                        {{ message }}
-                    </div>
+                    <div class="flash-message">{{ message }}</div>
                 {% endfor %}
             </div>
         {% endif %}
@@ -247,18 +221,17 @@
         function addTicketType() {
             const container = document.getElementById('ticket-container');
             const ticketHtml = `
-                <div class="ticket-type bg-gray-700 p-4 rounded-lg">
-                    <div class="flex justify-between items-start mb-3">
-                        <h5 class="font-medium">Ticket Type ${ticketCount + 1}</h5>
-                        <button type="button" onclick="removeTicketType(this)" 
-                                class="text-red-400 hover:text-red-300">
+                <div class="ticket-type">
+                    <div class="ticket-header">
+                        <h5>Ticket Type ${ticketCount + 1}</h5>
+                        <button type="button" onclick="removeTicketType(this)" class="delete-btn">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
-                    <div class="grid grid-cols-3 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium mb-1">Type</label>
-                            <select name="ticket_type[]" class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm">
+                    <div class="ticket-grid">
+                        <div class="form-group">
+                            <label>Type</label>
+                            <select name="ticket_type[]">
                                 <option value="Standard">Standard</option>
                                 <option value="VIP">VIP</option>
                                 <option value="Early Bird">Early Bird</option>
@@ -266,15 +239,13 @@
                                 <option value="Group">Group</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="block text-xs font-medium mb-1">Price (₹)</label>
-                            <input type="number" name="ticket_price[]" step="0.01" min="0" 
-                                   class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm">
+                        <div class="form-group">
+                            <label>Price (₹)</label>
+                            <input type="number" name="ticket_price[]" step="0.01" min="0">
                         </div>
-                        <div>
-                            <label class="block text-xs font-medium mb-1">Quantity</label>
-                            <input type="number" name="ticket_quantity[]" min="1" 
-                                   class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm">
+                        <div class="form-group">
+                            <label>Quantity</label>
+                            <input type="number" name="ticket_quantity[]" min="1">
                         </div>
                     </div>
                 </div>
@@ -295,14 +266,14 @@
                 reader.onload = function(e) {
                     const preview = document.createElement('img');
                     preview.src = e.target.result;
-                    preview.className = 'w-full h-40 object-cover rounded-lg mb-4';
+                    preview.className = 'preview-image';
                     
-                    const container = document.querySelector('.border-dashed').parentNode;
-                    const existingPreview = container.querySelector('img');
+                    const container = document.querySelector('.upload-area').parentNode;
+                    const existingPreview = container.querySelector('.preview-image');
                     if (existingPreview) {
                         existingPreview.replaceWith(preview);
                     } else {
-                        container.insertBefore(preview, container.querySelector('.border-dashed'));
+                        container.insertBefore(preview, container.querySelector('.upload-area'));
                     }
                 };
                 reader.readAsDataURL(file);
