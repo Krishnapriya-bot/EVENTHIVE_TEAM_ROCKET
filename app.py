@@ -3,10 +3,13 @@ from flask import Flask, jsonify, request, render_template, redirect, url_for, f
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from flask_mail import Mail, Message
 import random
 from datetime import timedelta, datetime
 import re
+import os
+import uuid
 
 # APP CONFIG
 app = Flask(__name__)
@@ -22,10 +25,16 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'testingrpp09@gmail.com'
 app.config['MAIL_PASSWORD'] = 'bwvk fyuq ifuc anuq'  
 
+# Image upload config
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
+
 db = SQLAlchemy(app)
 mail = Mail(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
+
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # ------------------------
 # HELPERS
@@ -97,6 +106,30 @@ class Event(db.Model):
 
     tickets = db.relationship("Ticket", backref="event", lazy=True)
     bookings = db.relationship("Booking", backref="event", lazy=True)
+    
+    image_path = db.Column(db.String(200), nullable=True)
+    registration_start = db.Column(db.DateTime, nullable=True)
+    registration_end = db.Column(db.DateTime, nullable=True)
+    max_attendees = db.Column(db.Integer, nullable=True)
+    
+    def get_total_bookings(self):
+        return len(self.bookings)
+    
+    def get_total_revenue(self):
+        return sum([booking.total_amount for booking in self.bookings if booking.payment_status == 'completed'])
+    
+    def get_ticket_stats(self):
+        stats = {}
+        for ticket in self.tickets:
+            booked = sum([bt.quantity for booking in self.bookings 
+                         for bt in booking.tickets if bt.ticket_id == ticket.ticket_id])
+            stats[ticket.type] = {
+                'total': ticket.max_quantity,
+                'sold': booked,
+                'remaining': ticket.max_quantity - booked,
+                'revenue': booked * ticket.price
+            }
+        return stats
 
 class Ticket(db.Model):
     __tablename__ = "tickets"
@@ -257,27 +290,41 @@ def organizer_home():
         flash("Access denied!")
         return redirect(url_for('dashboard'))
 
-    # NEW: Pagination & filters
+    # Pagination & filters
     page = request.args.get('page', 1, type=int)
     per_page = 6
 
-    # Optional filters
+    # Filters
     category_filter = request.args.get('category', None)
+    status_filter = request.args.get('status', None)
     search_query = request.args.get('search', None)
 
     query = Event.query.filter_by(organizer_id=current_user.user_id)
+    
     if category_filter:
         query = query.filter_by(category=category_filter)
+    if status_filter:
+        query = query.filter_by(status=status_filter)
     if search_query:
         query = query.filter(Event.title.ilike(f"%{search_query}%"))
 
-    events = query.order_by(Event.start_datetime.desc()).paginate(page=page, per_page=per_page)
+    events = query.order_by(Event.start_datetime.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+
+    # Get categories for filter dropdown
+    categories = db.session.query(Event.category).filter_by(
+        organizer_id=current_user.user_id
+    ).distinct().all()
+    categories = [cat[0] for cat in categories]
 
     return render_template(
         'organizer_home.html',
         events=events,
         name=current_user.name,
+        categories=categories,
         category_filter=category_filter,
+        status_filter=status_filter,
         search_query=search_query
     )
 
@@ -289,11 +336,9 @@ def create_event(event_id=None):
         flash("Access denied. Only organizers can create events.")
         return redirect(url_for('dashboard'))
 
-    # Categories dropdown
-    categories = ["General", "Workshop", "Conference", "Meetup"]
-
-    # If editing an existing event
+    categories = ["Music Show", "Comedy Show", "Workshop", "Sports", "Play", "Conference", "Adventure", "Performance", "Other"]
     event = None
+    
     if event_id:
         event = Event.query.get_or_404(event_id)
         if event.organizer_id != current_user.user_id:
@@ -301,12 +346,28 @@ def create_event(event_id=None):
             return redirect(url_for('organizer_home'))
 
     if request.method == 'POST':
+        # Basic event info
         title = request.form['title']
         description = request.form['description']
         start_dt = datetime.strptime(request.form['start_datetime'], '%Y-%m-%dT%H:%M')
         end_dt = datetime.strptime(request.form['end_datetime'], '%Y-%m-%dT%H:%M')
         location = request.form['location']
         category = request.form['category']
+        
+        # Registration period
+        reg_start = None
+        reg_end = None
+        if request.form.get('registration_start'):
+            reg_start = datetime.strptime(request.form['registration_start'], '%Y-%m-%dT%H:%M')
+        if request.form.get('registration_end'):
+            reg_end = datetime.strptime(request.form['registration_end'], '%Y-%m-%dT%H:%M')
+        
+        # Max attendees
+        max_attendees = None
+        if request.form.get('max_attendees'):
+            max_attendees = int(request.form['max_attendees'])
+            
+        # Status
         status = "published" if 'publish' in request.form else "draft"
 
         if event:  # Update existing event
@@ -317,6 +378,9 @@ def create_event(event_id=None):
             event.location = location
             event.category = category
             event.status = status
+            event.registration_start = reg_start
+            event.registration_end = reg_end
+            event.max_attendees = max_attendees
         else:  # Create new event
             event = Event(
                 organizer_id=current_user.user_id,
@@ -326,16 +390,232 @@ def create_event(event_id=None):
                 end_datetime=end_dt,
                 location=location,
                 category=category,
-                status=status
+                status=status,
+                registration_start=reg_start,
+                registration_end=reg_end,
+                max_attendees=max_attendees
             )
             db.session.add(event)
 
+        db.session.commit()
+        
+        # Handle ticket types (from your UI design)
+        ticket_types = request.form.getlist('ticket_type[]')
+        ticket_prices = request.form.getlist('ticket_price[]')
+        ticket_quantities = request.form.getlist('ticket_quantity[]')
+        
+        if not event_id:  # Only add tickets for new events
+            for i, ticket_type in enumerate(ticket_types):
+                if ticket_type and ticket_prices[i] and ticket_quantities[i]:
+                    new_ticket = Ticket(
+                        event_id=event.event_id,
+                        type=ticket_type,
+                        price=float(ticket_prices[i]),
+                        max_quantity=int(ticket_quantities[i])
+                    )
+                    db.session.add(new_ticket)
+        
         db.session.commit()
         flash(f"Event '{title}' saved successfully!")
         return redirect(url_for('organizer_home'))
 
     return render_template('create_event.html', event=event, categories=categories)
 
+@app.route('/manage_tickets/<int:event_id>', methods=['GET', 'POST'])
+@login_required
+def manage_tickets(event_id):
+    if current_user.role != "organizer":
+        flash("Access denied!")
+        return redirect(url_for('dashboard'))
+    
+    event = Event.query.get_or_404(event_id)
+    if event.organizer_id != current_user.user_id:
+        flash("Access denied!")
+        return redirect(url_for('organizer_home'))
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'add_ticket':
+            ticket_type = request.form['ticket_type']
+            price = float(request.form['price'])
+            max_quantity = int(request.form['max_quantity'])
+            
+            new_ticket = Ticket(
+                event_id=event_id,
+                type=ticket_type,
+                price=price,
+                max_quantity=max_quantity
+            )
+            db.session.add(new_ticket)
+            db.session.commit()
+            flash(f"Ticket type '{ticket_type}' added successfully!")
+        
+        elif action == 'update_ticket':
+            ticket_id = int(request.form['ticket_id'])
+            ticket = Ticket.query.get_or_404(ticket_id)
+            if ticket.event_id == event_id:
+                ticket.price = float(request.form['price'])
+                ticket.max_quantity = int(request.form['max_quantity'])
+                db.session.commit()
+                flash("Ticket updated successfully!")
+        
+        elif action == 'delete_ticket':
+            ticket_id = int(request.form['ticket_id'])
+            ticket = Ticket.query.get_or_404(ticket_id)
+            if ticket.event_id == event_id:
+                # Check if ticket has bookings
+                has_bookings = any(bt.ticket_id == ticket_id for booking in event.bookings for bt in booking.tickets)
+                if not has_bookings:
+                    db.session.delete(ticket)
+                    db.session.commit()
+                    flash("Ticket type deleted successfully!")
+                else:
+                    flash("Cannot delete ticket type with existing bookings!")
+    
+    tickets = Ticket.query.filter_by(event_id=event_id).all()
+    return render_template('manage_tickets.html', event=event, tickets=tickets)
+
+@app.route('/event_analytics/<int:event_id>')
+@login_required
+def event_analytics(event_id):
+    if current_user.role != "organizer":
+        flash("Access denied!")
+        return redirect(url_for('dashboard'))
+    
+    event = Event.query.get_or_404(event_id)
+    if event.organizer_id != current_user.user_id:
+        flash("Access denied!")
+        return redirect(url_for('organizer_home'))
+    
+    # Calculate analytics
+    total_bookings = event.get_total_bookings()
+    total_revenue = event.get_total_revenue()
+    ticket_stats = event.get_ticket_stats()
+    
+    # Attendee analytics
+    total_attendees = sum([sum([bt.quantity for bt in booking.tickets]) for booking in event.bookings])
+    checked_in = sum([sum([bt.quantity for bt in booking.tickets if bt.check_in_status == 'attended']) for booking in event.bookings])
+    
+    return render_template('event_analytics.html', 
+                         event=event, 
+                         total_bookings=total_bookings,
+                         total_revenue=total_revenue,
+                         total_attendees=total_attendees,
+                         checked_in=checked_in,
+                         ticket_stats=ticket_stats)
+    
+    
+@app.route('/upload_image/<int:event_id>', methods=['POST'])
+@login_required
+def upload_image(event_id):
+    if current_user.role != "organizer":
+        return jsonify({'error': 'Access denied'}), 403
+    
+    event = Event.query.get_or_404(event_id)
+    if event.organizer_id != current_user.user_id:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image provided'}), 400
+    
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    if file and allowed_file(file.filename):
+        # Generate unique filename
+        filename = str(uuid.uuid4()) + '.' + file.filename.rsplit('.', 1)[1].lower()
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        event.image_path = f"uploads/{filename}"
+        db.session.commit()
+        
+        return jsonify({'success': True, 'image_path': event.image_path})
+    
+    return jsonify({'error': 'Invalid file type'}), 400
+
+def allowed_file(filename):
+    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route('/duplicate_event/<int:event_id>')
+@login_required
+def duplicate_event(event_id):
+    if current_user.role != "organizer":
+        flash("Access denied!")
+        return redirect(url_for('dashboard'))
+    
+    original_event = Event.query.get_or_404(event_id)
+    if original_event.organizer_id != current_user.user_id:
+        flash("Access denied!")
+        return redirect(url_for('organizer_home'))
+    
+    # Create duplicate event
+    new_event = Event(
+        organizer_id=current_user.user_id,
+        title=f"Copy of {original_event.title}",
+        description=original_event.description,
+        category=original_event.category,
+        start_datetime=original_event.start_datetime,
+        end_datetime=original_event.end_datetime,
+        location=original_event.location,
+        status="draft",
+        registration_start=original_event.registration_start,
+        registration_end=original_event.registration_end,
+        max_attendees=original_event.max_attendees
+    )
+    db.session.add(new_event)
+    db.session.flush()  # Get the new event ID
+    
+    # Duplicate tickets
+    for ticket in original_event.tickets:
+        new_ticket = Ticket(
+            event_id=new_event.event_id,
+            type=ticket.type,
+            price=ticket.price,
+            max_quantity=ticket.max_quantity
+        )
+        db.session.add(new_ticket)
+    
+    db.session.commit()
+    flash(f"Event '{original_event.title}' duplicated successfully!")
+    return redirect(url_for('create_event', event_id=new_event.event_id))
+
+@app.route('/delete_event/<int:event_id>')
+@login_required
+def delete_event(event_id):
+    if current_user.role != "organizer":
+        flash("Access denied!")
+        return redirect(url_for('dashboard'))
+    
+    event = Event.query.get_or_404(event_id)
+    if event.organizer_id != current_user.user_id:
+        flash("Access denied!")
+        return redirect(url_for('organizer_home'))
+    
+    # Check if event has bookings
+    if event.bookings:
+        flash("Cannot delete event with existing bookings!")
+        return redirect(url_for('organizer_home'))
+    
+    # Delete associated tickets first
+    for ticket in event.tickets:
+        db.session.delete(ticket)
+    
+    # Delete event image if exists
+    if event.image_path:
+        try:
+            os.remove(os.path.join('static', event.image_path))
+        except:
+            pass
+    
+    db.session.delete(event)
+    db.session.commit()
+    flash("Event deleted successfully!")
+    return redirect(url_for('organizer_home'))
 
 @app.route('/toggle_event_status/<int:event_id>')
 @login_required

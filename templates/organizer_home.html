@@ -1,82 +1,313 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Organizer Home</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-  <style>
-    .card { margin-bottom: 20px; }
-    .status-badge { font-size: 0.9rem; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organizer Dashboard - EventHive</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="p-4">
-  <h2>Welcome, {{ name }}</h2>
-
-  <!-- Filters -->
-  <form method="get" class="row g-2 mb-3">
-    <div class="col-md-3">
-      <input type="text" name="search" value="{{ search_query }}" class="form-control" placeholder="Search events...">
-    </div>
-    <div class="col-md-3">
-      <select name="category" class="form-select">
-        <option value="">All Categories</option>
-        {% for cat in ["General","Workshop","Conference","Meetup"] %}
-        <option value="{{ cat }}" {% if category_filter==cat %}selected{% endif %}>{{ cat }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-2">
-      <button class="btn btn-primary">Filter</button>
-    </div>
-    <div class="col-md-4 text-end">
-      <a href="{{ url_for('create_event') }}" class="btn btn-success">Create New Event</a>
-    </div>
-  </form>
-
-  <!-- Event Cards -->
-  <div class="row">
-    {% for event in events.items %}
-    <div class="col-md-4">
-      <div class="card">
-        <img src="https://via.placeholder.com/350x150" class="card-img-top" alt="Event Image">
-        <div class="card-body">
-          <h5 class="card-title">{{ event.title }}</h5>
-          <p class="card-text">{{ event.category }} | {{ event.start_datetime.strftime('%d %b %Y %H:%M') }}</p>
-          <span class="badge bg-{{ 'success' if event.status=='published' else 'secondary' }} status-badge">{{ event.status }}</span>
-          <div class="mt-2">
-            <a href="{{ url_for('create_event', event_id=event.event_id) }}" class="btn btn-sm btn-primary">Edit</a>
-            <a href="{{ url_for('toggle_event_status', event_id=event.event_id) }}" class="btn btn-sm btn-warning">
-              {% if event.status=='published' %}Unpublish{% else %}Publish{% endif %}
-            </a>
-            <a href="{{ url_for('attendees', event_id=event.event_id) }}" class="btn btn-sm btn-info">Attendees</a>
-          </div>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-2xl font-bold text-green-400">EventHive</h1>
+                    <span class="text-gray-300">Organizer Dashboard</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-300">Welcome, {{ name }}!</span>
+                    <a href="{{ url_for('logout') }}" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </a>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
+    </nav>
 
-  <!-- Pagination -->
-  <nav>
-    <ul class="pagination justify-content-center">
-      {% if events.has_prev %}
-      <li class="page-item">
-        <a class="page-link" href="{{ url_for('organizer_home', page=events.prev_num) }}">Previous</a>
-      </li>
-      {% endif %}
-      {% for page_num in events.iter_pages() %}
-      {% if page_num %}
-      <li class="page-item {% if page_num==events.page %}active{% endif %}">
-        <a class="page-link" href="{{ url_for('organizer_home', page=page_num) }}">{{ page_num }}</a>
-      </li>
-      {% endif %}
-      {% endfor %}
-      {% if events.has_next %}
-      <li class="page-item">
-        <a class="page-link" href="{{ url_for('organizer_home', page=events.next_num) }}">Next</a>
-      </li>
-      {% endif %}
-    </ul>
-  </nav>
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header with Create Button -->
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 space-y-4 lg:space-y-0">
+            <div>
+                <h2 class="text-3xl font-bold mb-2">My Events</h2>
+                <p class="text-gray-400">Manage your events, track bookings, and engage with attendees</p>
+            </div>
+            <a href="{{ url_for('create_event') }}" 
+               class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors inline-flex items-center">
+                <i class="fas fa-plus mr-2"></i>Create New Event
+            </a>
+        </div>
+
+        <!-- Filters and Search -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-8">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Search Events</label>
+                    <input type="text" name="search" value="{{ search_query or '' }}" 
+                           placeholder="Search by event name..."
+                           class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Category</label>
+                    <select name="category" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                            <option value="{{ cat }}" {{ 'selected' if category_filter == cat else '' }}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Status</label>
+                    <select name="status" class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white">
+                        <option value="">All Status</option>
+                        <option value="draft" {{ 'selected' if status_filter == 'draft' else '' }}>Draft</option>
+                        <option value="published" {{ 'selected' if status_filter == 'published' else '' }}>Published</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-search mr-2"></i>Filter
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Events Grid -->
+        {% if events.items %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {% for event in events.items %}
+                <div class="bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow">
+                    <!-- Event Image -->
+                    <div class="relative h-48 bg-gray-700">
+                        {% if event.image_path %}
+                            <img src="{{ url_for('static', filename=event.image_path) }}" 
+                                 alt="{{ event.title }}" class="w-full h-full object-cover">
+                        {% else %}
+                            <div class="w-full h-full flex items-center justify-center">
+                                <i class="fas fa-image text-4xl text-gray-500"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Status Badge -->
+                        <div class="absolute top-3 left-3">
+                            <span class="px-2 py-1 rounded-full text-xs font-semibold
+                                {{ 'bg-green-600 text-white' if event.status == 'published' else 'bg-yellow-600 text-black' }}">
+                                {{ event.status.title() }}
+                            </span>
+                        </div>
+                        
+                        <!-- Quick Actions -->
+                        <div class="absolute top-3 right-3">
+                            <div class="flex space-x-1">
+                                <a href="{{ url_for('create_event', event_id=event.event_id) }}" 
+                                   class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full transition-colors" title="Edit">
+                                    <i class="fas fa-edit text-sm"></i>
+                                </a>
+                                <a href="{{ url_for('duplicate_event', event_id=event.event_id) }}" 
+                                   class="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-full transition-colors" title="Duplicate">
+                                    <i class="fas fa-copy text-sm"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Event Info -->
+                    <div class="p-6">
+                        <div class="flex items-start justify-between mb-3">
+                            <h3 class="text-xl font-bold text-white truncate flex-1 mr-2">{{ event.title }}</h3>
+                        </div>
+                        
+                        <div class="space-y-2 text-sm text-gray-400 mb-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-calendar-alt w-4 mr-2"></i>
+                                <span>{{ event.start_datetime.strftime('%b %d, %Y at %I:%M %p') }}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-map-marker-alt w-4 mr-2"></i>
+                                <span class="truncate">{{ event.location }}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-tag w-4 mr-2"></i>
+                                <span>{{ event.category }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Event Stats -->
+                        <div class="grid grid-cols-3 gap-3 mb-4 text-center">
+                            <div class="bg-gray-700 rounded-lg p-3">
+                                <div class="text-lg font-bold text-green-400">{{ event.get_total_bookings() }}</div>
+                                <div class="text-xs text-gray-400">Bookings</div>
+                            </div>
+                            <div class="bg-gray-700 rounded-lg p-3">
+                                <div class="text-lg font-bold text-blue-400">{{ event.tickets|length }}</div>
+                                <div class="text-xs text-gray-400">Ticket Types</div>
+                            </div>
+                            <div class="bg-gray-700 rounded-lg p-3">
+                                <div class="text-lg font-bold text-yellow-400">₹{{ "%.0f"|format(event.get_total_revenue()) }}</div>
+                                <div class="text-xs text-gray-400">Revenue</div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex space-x-2">
+                            {% if event.tickets %}
+                                <a href="{{ url_for('event_analytics', event_id=event.event_id) }}" 
+                                   class="flex-1 bg-green-600 hover:bg-green-700 text-white text-center py-2 rounded-lg transition-colors text-sm">
+                                    <i class="fas fa-chart-bar mr-1"></i>Analytics
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('manage_tickets', event_id=event.event_id) }}" 
+                                   class="flex-1 bg-orange-600 hover:bg-orange-700 text-white text-center py-2 rounded-lg transition-colors text-sm">
+                                    <i class="fas fa-ticket-alt mr-1"></i>Add Tickets
+                                </a>
+                            {% endif %}
+                            
+                            <a href="{{ url_for('toggle_event_status', event_id=event.event_id) }}" 
+                               class="flex-1 {{ 'bg-yellow-600 hover:bg-yellow-700' if event.status == 'published' else 'bg-green-600 hover:bg-green-700' }} text-white text-center py-2 rounded-lg transition-colors text-sm">
+                                <i class="fas fa-{{ 'eye-slash' if event.status == 'published' else 'eye' }} mr-1"></i>
+                                {{ 'Unpublish' if event.status == 'published' else 'Publish' }}
+                            </a>
+                        </div>
+                        
+                        <!-- Management Links -->
+                        <div class="flex justify-between mt-4 pt-4 border-t border-gray-700 text-sm">
+                            <a href="{{ url_for('manage_tickets', event_id=event.event_id) }}" 
+                               class="text-blue-400 hover:text-blue-300 transition-colors">
+                                <i class="fas fa-ticket-alt mr-1"></i>Manage Tickets
+                            </a>
+                            <a href="{{ url_for('attendees', event_id=event.event_id) }}" 
+                               class="text-purple-400 hover:text-purple-300 transition-colors">
+                                <i class="fas fa-users mr-1"></i>Attendees
+                            </a>
+                            <button onclick="" 
+                                    class="text-red-400 hover:text-red-300 transition-colors">
+                                <i class="fas fa-trash mr-1"></i>Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if events.pages > 1 %}
+            <div class="flex justify-center items-center space-x-2">
+                {% if events.has_prev %}
+                    <a href="{{ url_for('organizer_home', page=events.prev_num, category=category_filter, status=status_filter, search=search_query) }}" 
+                       class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                {% endif %}
+                
+                {% for page_num in events.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != events.page %}
+                            <a href="{{ url_for('organizer_home', page=page_num, category=category_filter, status=status_filter, search=search_query) }}" 
+                               class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">{{ page_num }}</a>
+                        {% else %}
+                            <span class="bg-green-600 text-white px-4 py-2 rounded-lg">{{ page_num }}</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-gray-400">…</span>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if events.has_next %}
+                    <a href="{{ url_for('organizer_home', page=events.next_num, category=category_filter, status=status_filter, search=search_query) }}" 
+                       class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-16">
+                <div class="bg-gray-800 rounded-lg p-12 max-w-md mx-auto">
+                    <i class="fas fa-calendar-plus text-6xl text-gray-500 mb-6"></i>
+                    <h3 class="text-2xl font-bold text-gray-300 mb-4">No Events Found</h3>
+                    {% if search_query or category_filter or status_filter %}
+                        <p class="text-gray-400 mb-6">Try adjusting your filters or search terms.</p>
+                        <div class="space-x-4">
+                            <a href="{{ url_for('organizer_home') }}" 
+                               class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors">
+                                Clear Filters
+                            </a>
+                            <a href="{{ url_for('create_event') }}" 
+                               class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors">
+                                Create Event
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-gray-400 mb-6">Create your first event to get started!</p>
+                        <a href="{{ url_for('create_event') }}" 
+                           class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-plus mr-2"></i>Create Your First Event
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-lg p-6 max-w-md mx-4">
+            <h3 class="text-xl font-bold text-white mb-4">Confirm Delete</h3>
+            <p class="text-gray-300 mb-6">Are you sure you want to delete "<span id="eventTitle"></span>"? This action cannot be undone.</p>
+            <div class="flex space-x-4">
+                <button onclick="closeDeleteModal()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <a id="deleteLink" href="#" class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-center transition-colors">
+                    Delete
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div id="flashMessages" class="fixed top-4 right-4 z-50">
+                {% for message in messages %}
+                    <div class="bg-green-600 text-white px-6 py-3 rounded-lg mb-2 shadow-lg flash-message">
+                        {{ message }}
+                        <button onclick="this.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">×</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <script>
+        function confirmDelete(eventId, eventTitle) {
+            document.getElementById('eventTitle').textContent = eventTitle;
+            document.getElementById('deleteLink').href = '/delete_event/' + eventId;
+            document.getElementById('deleteModal').classList.remove('hidden');
+            document.getElementById('deleteModal').classList.add('flex');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            document.getElementById('deleteModal').classList.remove('flex');
+        }
+
+        // Auto-hide flash messages after 5 seconds
+        setTimeout(function() {
+            const messages = document.querySelectorAll('.flash-message');
+            messages.forEach(function(message) {
+                message.style.opacity = '0';
+                setTimeout(function() {
+                    message.remove();
+                }, 300);
+            });
+        }, 5000);
+    </script>
 </body>
 </html>

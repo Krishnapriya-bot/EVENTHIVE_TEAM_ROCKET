@@ -1,111 +1,345 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>{% if event %}Edit{% else %}Create{% endif %} Event</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <style>
-    #map { height: 300px; margin-top: 10px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ 'Edit Event' if event else 'Create Event' }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="p-4">
-  <h2>{% if event %}Edit{% else %}Create{% endif %} Event</h2>
-  <form method="POST">
-    <div class="mb-3">
-      <label class="form-label">Event Title</label>
-      <input type="text" name="title" class="form-control" required value="{{ event.title if event else '' }}">
+<body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-8">
+                <h1 class="text-3xl font-bold">
+                    <i class="fas fa-calendar-plus mr-3"></i>
+                    {{ 'Edit Event' if event else 'Add New Event' }}
+                </h1>
+                <a href="{{ url_for('organizer_home') }}" 
+                   class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Back
+                </a>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" class="space-y-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    
+                    <!-- Left Column - Event Details -->
+                    <div class="space-y-6">
+                        <!-- Basic Information -->
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h3 class="text-xl font-semibold mb-6 text-green-400">
+                                <i class="fas fa-info-circle mr-2"></i>Event Information
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Event Name *</label>
+                                    <input type="text" name="title" required 
+                                           value="{{ event.title if event else '' }}"
+                                           class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
+                                           placeholder="Enter event name">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Description</label>
+                                    <textarea name="description" rows="4" 
+                                              class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
+                                              placeholder="Describe your event...">{{ event.description if event else '' }}</textarea>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Location *</label>
+                                    <input type="text" name="location" required 
+                                           value="{{ event.location if event else '' }}"
+                                           class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white"
+                                           placeholder="Event venue or address">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Category *</label>
+                                    <select name="category" required 
+                                            class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-white">
+                                        <option value="">Select Category</option>
+                                        {% for cat in categories %}
+                                            <option value="{{ cat }}" {{ 'selected' if event and event.category == cat else '' }}>
+                                                {{ cat }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date & Time Settings -->
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h3 class="text-xl font-semibold mb-6 text-blue-400">
+                                <i class="fas fa-clock mr-2"></i>Date & Time
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Start Date & Time *</label>
+                                        <input type="datetime-local" name="start_datetime" required 
+                                               value="{{ event.start_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}"
+                                               class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">End Date & Time *</label>
+                                        <input type="datetime-local" name="end_datetime" required 
+                                               value="{{ event.end_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}"
+                                               class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Registration Start</label>
+                                        <input type="datetime-local" name="registration_start"
+                                               value="{{ event.registration_start.strftime('%Y-%m-%dT%H:%M') if event and event.registration_start else '' }}"
+                                               class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium mb-2">Registration End</label>
+                                        <input type="datetime-local" name="registration_end"
+                                               value="{{ event.registration_end.strftime('%Y-%m-%dT%H:%M') if event and event.registration_end else '' }}"
+                                               class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium mb-2">Maximum Attendees</label>
+                                    <input type="number" name="max_attendees" min="1"
+                                           value="{{ event.max_attendees if event and event.max_attendees else '' }}"
+                                           class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+                                           placeholder="Leave empty for unlimited">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column - Tickets & Settings -->
+                    <div class="space-y-6">
+                        <!-- Ticket Types -->
+                        {% if not event %}
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h3 class="text-xl font-semibold mb-6 text-purple-400">
+                                <i class="fas fa-ticket-alt mr-2"></i>Ticket Types
+                            </h3>
+                            
+                            <div id="ticket-container" class="space-y-4">
+                                <!-- Default ticket type -->
+                                <div class="ticket-type bg-gray-700 p-4 rounded-lg">
+                                    <div class="grid grid-cols-3 gap-3">
+                                        <div>
+                                            <label class="block text-xs font-medium mb-1">Type</label>
+                                            <select name="ticket_type[]" class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm">
+                                                <option value="Standard">Standard</option>
+                                                <option value="VIP">VIP</option>
+                                                <option value="Early Bird">Early Bird</option>
+                                                <option value="Student">Student</option>
+                                                <option value="Group">Group</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium mb-1">Price (₹)</label>
+                                            <input type="number" name="ticket_price[]" step="0.01" min="0" 
+                                                   class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-medium mb-1">Quantity</label>
+                                            <input type="number" name="ticket_quantity[]" min="1" 
+                                                   class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button type="button" onclick="addTicketType()" 
+                                    class="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
+                                <i class="fas fa-plus mr-2"></i>Add Another Ticket Type
+                            </button>
+                        </div>
+                        {% endif %}
+
+                        <!-- Event Photo -->
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h3 class="text-xl font-semibold mb-6 text-yellow-400">
+                                <i class="fas fa-image mr-2"></i>Event Photo
+                            </h3>
+                            
+                            {% if event and event.image_path %}
+                            <div class="mb-4">
+                                <img src="{{ url_for('static', filename=event.image_path) }}" 
+                                     alt="Event image" class="w-full h-40 object-cover rounded-lg">
+                            </div>
+                            {% endif %}
+                            
+                            <div class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-500 mb-4"></i>
+                                <p class="text-gray-400 mb-4">Upload event photo</p>
+                                <input type="file" name="image" accept="image/*" class="hidden" id="image-upload">
+                                <button type="button" onclick="document.getElementById('image-upload').click()" 
+                                        class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg transition-colors">
+                                    Choose Photo
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Publish Settings -->
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h3 class="text-xl font-semibold mb-6 text-red-400">
+                                <i class="fas fa-cog mr-2"></i>Publish Settings
+                            </h3>
+                            
+                            <div class="flex items-center space-x-4">
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="publish" 
+                                           {{ 'checked' if event and event.status == 'published' else '' }}
+                                           class="mr-2 text-green-500 bg-gray-700 border-gray-600 rounded focus:ring-green-500">
+                                    <span>Publish Event</span>
+                                </label>
+                            </div>
+                            <p class="text-sm text-gray-400 mt-2">
+                                Uncheck to save as draft. Only published events are visible to attendees.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-center space-x-4 pt-8">
+                    <button type="submit" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
+                        <i class="fas fa-save mr-2"></i>
+                        {{ 'Update Event' if event else 'Create Event' }}
+                    </button>
+                    
+                    <a href="{{ url_for('organizer_home') }}" 
+                       class="bg-gray-600 hover:bg-gray-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
+                        <i class="fas fa-times mr-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <div class="mb-3">
-      <label class="form-label">Description</label>
-      <textarea name="description" class="form-control">{{ event.description if event else '' }}</textarea>
-    </div>
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="fixed top-4 right-4 z-50">
+                {% for message in messages %}
+                    <div class="bg-green-600 text-white px-6 py-3 rounded-lg mb-2 shadow-lg">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
 
-    <div class="row g-3 mb-3">
-      <div class="col-md-6">
-        <label class="form-label">Start DateTime</label>
-        <input type="datetime-local" name="start_datetime" class="form-control" required
-               value="{{ event.start_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}">
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">End DateTime</label>
-        <input type="datetime-local" name="end_datetime" class="form-control" required
-               value="{{ event.end_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}">
-      </div>
-    </div>
+    <script>
+        let ticketCount = 1;
+        
+        function addTicketType() {
+            const container = document.getElementById('ticket-container');
+            const ticketHtml = `
+                <div class="ticket-type bg-gray-700 p-4 rounded-lg">
+                    <div class="flex justify-between items-start mb-3">
+                        <h5 class="font-medium">Ticket Type ${ticketCount + 1}</h5>
+                        <button type="button" onclick="removeTicketType(this)" 
+                                class="text-red-400 hover:text-red-300">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium mb-1">Type</label>
+                            <select name="ticket_type[]" class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm">
+                                <option value="Standard">Standard</option>
+                                <option value="VIP">VIP</option>
+                                <option value="Early Bird">Early Bird</option>
+                                <option value="Student">Student</option>
+                                <option value="Group">Group</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium mb-1">Price (₹)</label>
+                            <input type="number" name="ticket_price[]" step="0.01" min="0" 
+                                   class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium mb-1">Quantity</label>
+                            <input type="number" name="ticket_quantity[]" min="1" 
+                                   class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded text-white text-sm">
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', ticketHtml);
+            ticketCount++;
+        }
+        
+        function removeTicketType(button) {
+            button.closest('.ticket-type').remove();
+        }
 
-    <div class="mb-3">
-      <label class="form-label">Category</label>
-      <select name="category" class="form-select">
-        {% for cat in categories %}
-        <option value="{{ cat }}" {% if event and event.category==cat %}selected{% endif %}>{{ cat }}</option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="mb-3">
-      <label class="form-label">Location</label>
-      <input type="text" id="locationInput" name="location" class="form-control" required
-             value="{{ event.location if event else '' }}">
-      <div id="map"></div>
-    </div>
-
-    <div class="form-check mb-3">
-      <input type="checkbox" name="publish" class="form-check-input" id="publishCheck" {% if event and event.status=='published' %}checked{% endif %}>
-      <label class="form-check-label" for="publishCheck">Publish Event</label>
-    </div>
-
-    <button class="btn btn-success">{% if event %}Update{% else %}Create{% endif %} Event</button>
-    <a href="{{ url_for('organizer_home') }}" class="btn btn-secondary">Cancel</a>
-  </form>
-
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      // Initialize map
-      var map = L.map('map').setView([20.5937, 78.9629], 5);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-
-      var marker;
-
-      function updateMap(location) {
-        if(!location) return;
-        fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(location))
-          .then(resp => resp.json())
-          .then(data => {
-            if(data.length > 0) {
-              var lat = data[0].lat;
-              var lon = data[0].lon;
-              map.setView([lat, lon], 13);
-              if(marker) map.removeLayer(marker);
-              marker = L.marker([lat, lon], {draggable:true}).addTo(map)
-                       .bindPopup(location).openPopup();
-
-              // Update input if marker dragged
-              marker.on('dragend', function(e){
-                var pos = e.target.getLatLng();
-                document.getElementById('locationInput').value = pos.lat + ',' + pos.lng;
-              });
+        // Image upload preview
+        document.getElementById('image-upload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.createElement('img');
+                    preview.src = e.target.result;
+                    preview.className = 'w-full h-40 object-cover rounded-lg mb-4';
+                    
+                    const container = document.querySelector('.border-dashed').parentNode;
+                    const existingPreview = container.querySelector('img');
+                    if (existingPreview) {
+                        existingPreview.replaceWith(preview);
+                    } else {
+                        container.insertBefore(preview, container.querySelector('.border-dashed'));
+                    }
+                };
+                reader.readAsDataURL(file);
             }
-          });
-      }
+        });
 
-      var locationInput = document.getElementById('locationInput');
-
-      // If input already has a value, use it to initialize the map
-      if(locationInput.value.trim() !== '') {
-        updateMap(locationInput.value);
-      }
-
-      // Update map when typing
-      var timeout;
-      locationInput.addEventListener('input', function(){
-        clearTimeout(timeout);
-        var loc = this.value;
-        timeout = setTimeout(function(){ updateMap(loc); }, 500);
-      });
-    });
-  </script>
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const startTime = new Date(document.querySelector('input[name="start_datetime"]').value);
+            const endTime = new Date(document.querySelector('input[name="end_datetime"]').value);
+            
+            if (endTime <= startTime) {
+                e.preventDefault();
+                alert('End time must be after start time');
+                return false;
+            }
+            
+            const regStart = document.querySelector('input[name="registration_start"]').value;
+            const regEnd = document.querySelector('input[name="registration_end"]').value;
+            
+            if (regStart && regEnd) {
+                const regStartTime = new Date(regStart);
+                const regEndTime = new Date(regEnd);
+                
+                if (regEndTime <= regStartTime) {
+                    e.preventDefault();
+                    alert('Registration end time must be after registration start time');
+                    return false;
+                }
+                
+                if (regEndTime > startTime) {
+                    e.preventDefault();
+                    alert('Registration must end before the event starts');
+                    return false;
+                }
+            }
+        });
+    </script>
 </body>
 </html>
