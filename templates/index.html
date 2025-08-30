@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EventHive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">EventHive</div>
+      <nav class="nav-links">
+        <a href="#" style="display: flex; align-items: center; gap: 5px">
+          Explore Events
+          <span style="transform: rotate(45deg)">↗</span>
+        </a>
+        <a href="{{ url_for('register') }}" class="sign-in-btn">Sign In</a>
+      </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+      <section class="content-section">
+        <h1 class="main-title">
+          Delightful<br />
+          events<br />
+          <span class="title-gradient">start here.</span>
+        </h1>
+
+        <p class="subtitle">
+          Set up an event page, invite friends and sell tickets. Host a
+          memorable event today.
+        </p>
+
+        <a href="{{ url_for('register') }}">Get Started</a>
+      </section>
+
+      <section class="visual-section">
+        <div class="event-platform-3d">
+          <div class="platform-container">
+            <div class="event-card card-1">
+              <h3>Music Festival</h3>
+              <p>Live concert featuring top artists</p>
+              <div style="font-size: 10px; opacity: 0.8">Tonight • 8:00 PM</div>
+            </div>
+
+            <div class="event-card card-2">
+              <h3>Tech Conference</h3>
+              <p>Innovation and networking event</p>
+              <div style="font-size: 10px; opacity: 0.8">Aug 31 • 9:00 AM</div>
+            </div>
+
+            <div class="event-card card-3">
+              <h3>Art Exhibition</h3>
+              <p>Contemporary art showcase</p>
+              <div style="font-size: 10px; opacity: 0.8">Sep 5 • 6:00 PM</div>
+            </div>
+
+            <div class="event-card card-4">
+              <h3>Food Festival</h3>
+              <p>Culinary delights from around the world</p>
+              <div style="font-size: 10px; opacity: 0.8">Sep 10 • 12:00 PM</div>
+            </div>
+
+            <div class="event-card card-5">
+              <h3>Startup Pitch</h3>
+              <p>Entrepreneurs present innovative ideas</p>
+              <div style="font-size: 10px; opacity: 0.8">Sep 15 • 2:00 PM</div>
+            </div>
+
+            <div class="event-card card-6">
+              <h3>Photography Workshop</h3>
+              <p>Learn from professional photographers</p>
+              <div style="font-size: 10px; opacity: 0.8">Sep 20 • 10:00 AM</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      // Add click interaction to CTA button
+      document.querySelector(".cta-button").addEventListener("click", () => {
+        // Create a ripple effect
+        const button = document.querySelector(".cta-button");
+        const ripple = document.createElement("div");
+        ripple.style.cssText = `
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.3);
+                width: 100px;
+                height: 100px;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%, -50%) scale(0);
+                animation: ripple 0.6s linear;
+                pointer-events: none;
+            `;
+
+        button.style.position = "relative";
+        button.appendChild(ripple);
+
+        setTimeout(() => ripple.remove(), 600);
+      });
+
+      // Add ripple animation
+      const style = document.createElement("style");
+      style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: translate(-50%, -50%) scale(2);
+                    opacity: 0;
+                }
+            }
+        `;
+      document.head.appendChild(style);
+    </script>
+  </body>
+</html>
