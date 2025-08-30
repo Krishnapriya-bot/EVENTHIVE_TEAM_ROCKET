@@ -200,7 +200,7 @@ def verify_otp():
     return render_template('verify_otp.html', email=user.email)
 
 # -------- RESEND OTP --------
-@app.route('/resend-otp', methods=['POST'])
+@app.route('/resend_otp', methods=['POST'])
 def resend_otp():
     pending_user_id = session.get('pending_user')
     if not pending_user_id:
