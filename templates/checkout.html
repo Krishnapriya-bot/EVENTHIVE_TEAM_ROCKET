@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
+        padding: 20px;
+      }
+      .container {
+        max-width: 800px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .order-summary,
+      .attendee-details,
+      .payment-options {
+        margin-bottom: 20px;
+      }
+      h2 {
+        border-bottom: 2px solid #ccc;
+        padding-bottom: 10px;
+      }
+      ul {
+        list-style-type: none;
+        padding: 0;
+      }
+      li {
+        padding: 10px 0;
+        border-bottom: 1px dashed #eee;
+      }
+      .total-amount {
+        font-size: 1.5em;
+        font-weight: bold;
+        text-align: right;
+        margin-top: 20px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type="text"] {
+        width: calc(100% - 16px); /* Account for padding */
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      .submit-btn {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 16px;
+        width: 100%;
+        margin-top: 20px;
+      }
+      .submit-btn:hover {
+        background-color: #218838;
+      }
+      .submit-btn:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+      }
+      .flash-messages {
+        margin-bottom: 20px;
+      }
+      .flash-message {
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 4px;
+      }
+      .flash-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .flash-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .flash-warning {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Checkout for {{ event.title }}</h1>
+
+      <!-- Flash Messages -->
+      <div class="flash-messages">
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if
+        messages %} {% for category, message in messages %}
+        <div class="flash-message flash-{{ category }}">{{ message }}</div>
+        {% endfor %} {% endif %} {% endwith %}
+      </div>
+
+      <form method="POST" action="{{ url_for('checkout') }}" id="checkoutForm">
+        <div class="order-summary">
+          <h2>Order Summary</h2>
+          <ul>
+            {% for ticket in selected_tickets %}
+            <li>
+              {{ ticket.quantity }} x {{ ticket.type }} Ticket @ ₹{{ "%.2f" |
+              format(ticket.price) }} - Subtotal: ₹{{ "%.2f" |
+              format(ticket.quantity * ticket.price) }}
+            </li>
+            {% endfor %}
+          </ul>
+          <div class="total-amount">
+            Total: ₹{{ "%.2f" | format(total_amount) }}
+          </div>
+        </div>
+
+        <div class="attendee-details">
+          <h2>Attendee Details</h2>
+          <p>Please enter the name for each ticket.</p>
+
+          {% set attendee_count = 0 %} {% for ticket in selected_tickets %} {%
+          for i in range(ticket.quantity) %} {% set attendee_count =
+          attendee_count + 1 %}
+          <div class="form-group">
+            <label for="attendee_{{ attendee_count }}">
+              Attendee {{ attendee_count }} ({{ ticket.type }} Ticket)
+            </label>
+            <input
+              type="text"
+              id="attendee_{{ attendee_count }}"
+              name="attendee_name[]"
+              placeholder="Full Name"
+              required
+            />
+          </div>
+          {% endfor %} {% endfor %}
+        </div>
+
+        <button type="submit" class="submit-btn" id="confirmBtn">
+          Confirm Booking
+        </button>
+      </form>
+    </div>
+
+    <script>
+      // Add form validation and debug logging
+      document
+        .getElementById("checkoutForm")
+        .addEventListener("submit", function (e) {
+          console.log("Form submit event triggered");
+
+          // Check if all required fields are filled
+          const requiredInputs = document.querySelectorAll("input[required]");
+          let allFilled = true;
+
+          requiredInputs.forEach(function (input) {
+            if (!input.value.trim()) {
+              allFilled = false;
+              input.style.borderColor = "red";
+              console.log("Empty required field:", input.name);
+            } else {
+              input.style.borderColor = "#ccc";
+            }
+          });
+
+          if (!allFilled) {
+            e.preventDefault();
+            alert("Please fill in all attendee names before proceeding.");
+            return false;
+          }
+
+          // Disable button to prevent double submission
+          const submitBtn = document.getElementById("confirmBtn");
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Processing...";
+
+          console.log("Form validation passed, submitting...");
+        });
+
+      // Log page load
+      console.log("Checkout page loaded");
+    </script>
+  </body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Event Tickets</title>
+    <style>
+      body {
+        font-family: sans-serif;
+      }
+      .ticket {
+        border: 2px solid black;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 10px;
+        page-break-inside: avoid;
+      }
+      .ticket h1 {
+        text-align: center;
+        color: #004d99;
+      }
+      .ticket h2 {
+        margin-top: 0;
+      }
+      .ticket-info {
+        display: flex;
+        justify-content: space-between;
+      }
+      .qr-code {
+        text-align: center;
+        padding: 10px;
+      }
+      .qr-code img {
+        width: 150px;
+        height: 150px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>EventHive E-Tickets</h1>
+    {% for ticket in tickets %}
+    <div class="ticket">
+      <h2>{{ event.title }}</h2>
+      <p><strong>Ticket Type:</strong> {{ ticket.type }}</p>
+      <p><strong>Price:</strong> ₹{{ "%.2f" | format(ticket.price) }}</p>
+      <p>
+        <strong>Date:</strong> {{ event.start_datetime.strftime('%Y-%m-%d') }}
+      </p>
+      <p><strong>Time:</strong> {{ event.start_datetime.strftime('%H:%M') }}</p>
+      <p><strong>Location:</strong> {{ event.location }}</p>
+      <div class="qr-code">
+        <img src="{{ ticket.qr_code_image }}" alt="QR Code" />
+        <p>{{ ticket.qr_code_data }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </body>
+</html>

@@ -1,9 +1,17 @@
-from flask import Flask, jsonify, request, render_template, redirect, url_for, flash, session
+from flask import Flask, jsonify, request, render_template, redirect, url_for, flash, session, json, render_template_string
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_mail import Mail, Message
+import qrcode
+from base64 import b64encode
+from io import BytesIO
+import socket
+import uuid
+from flask_weasyprint import HTML, render_pdf
+from io import BytesIO
+from flask_mail import Message
 import random
 from datetime import timedelta, datetime
 import re
@@ -42,6 +50,25 @@ mail = Mail(app)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
+
+def get_local_ip():
+    """Get the local IP address of the machine"""
+    ip = "127.0.0.1"
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    except Exception:
+        pass
+    finally:
+        try:
+            s.close()
+        except Exception:
+            pass
+    return ip
+
+LOCAL_IP = get_local_ip()
+BASE_URL = f"http://{LOCAL_IP}:5000"
 
 class User(UserMixin, db.Model):
     __tablename__ = "users"
@@ -331,14 +358,9 @@ def event_page(event_id):
     
 @app.route("/join/<int:event_id>")
 @login_required
-def join(event_id):
-    event = Event.query.get_or_404(event_id)
-    organizer = User.query.get(event.organizer_id)
-    return render_template(
-        "join.html",
-        event=event,
-        organizer=organizer
-    )
+def join_event(event_id): # The function name is 'join_event'
+    # This route will now redirect to the new booking page
+    return redirect(url_for('book_event', event_id=event_id))
 
 
 @app.route('/organizer_home')
@@ -640,6 +662,365 @@ def delete_event(event_id):
         flash(f"Error deleting event: {str(e)}")
     
     return redirect(url_for('organizer_home'))
+
+@app.route('/book_event/<int:event_id>', methods=['GET', 'POST'])
+@login_required
+def book_event(event_id):
+    event = Event.query.get_or_404(event_id)
+    tickets = event.tickets
+    
+    if request.method == 'POST':
+        quantities_json = request.form.get('quantities')
+        
+        if not quantities_json:
+            flash("Please select at least one ticket.", "warning")
+            return redirect(url_for('book_event', event_id=event.event_id))
+
+        try:
+            quantities = json.loads(quantities_json)
+        except json.JSONDecodeError:
+            flash("Invalid data submitted.", "danger")
+            return redirect(url_for('book_event', event_id=event.event_id))
+
+        selected_tickets_details = []
+        total_amount = 0
+
+        for ticket_id_str, quantity in quantities.items():
+            if int(quantity) > 0:
+                ticket = Ticket.query.get(int(ticket_id_str))
+                if not ticket or ticket.event_id != event.event_id:
+                    flash("Invalid ticket selected.", "danger")
+                    return redirect(url_for('book_event', event_id=event.event_id))
+                
+                # You can add the availability check here as before
+                
+                total_amount += ticket.price * int(quantity)
+                selected_tickets_details.append({
+                    'id': ticket.ticket_id,
+                    'type': ticket.type,
+                    'price': ticket.price,
+                    'quantity': int(quantity)
+                })
+        
+        if not selected_tickets_details:
+            flash("Please select at least one ticket to proceed.", "warning")
+            return redirect(url_for('book_event', event_id=event.event_id))
+        
+        # Store selected tickets and total amount in the session
+        session['selected_tickets'] = selected_tickets_details
+        session['total_amount'] = total_amount
+        session['event_id'] = event.event_id
+
+        return redirect(url_for('checkout'))
+
+    return render_template('booking_page.html', event=event, tickets=tickets)
+
+
+# Replace your existing checkout route with this fixed version
+
+@app.route('/checkout', methods=['GET', 'POST'])
+@login_required
+def checkout():
+    # Retrieve selected tickets and total amount from the session
+    selected_tickets = session.get('selected_tickets')
+    total_amount = session.get('total_amount')
+    event_id = session.get('event_id')
+
+    if not selected_tickets or not event_id:
+        flash("No tickets selected. Please start a new booking.", "danger")
+        return redirect(url_for('eventhive'))
+
+    event = Event.query.get_or_404(event_id)
+
+    if request.method == 'POST':
+        # Retrieve attendee names from the form
+        attendee_names = request.form.getlist('attendee_name[]')
+        
+        # Check if the number of names matches the total quantity of tickets
+        total_quantity = sum(t['quantity'] for t in selected_tickets)
+        if len(attendee_names) != total_quantity:
+            flash("Please provide a name for each ticket.", "danger")
+            return redirect(url_for('checkout'))
+
+        try:
+            # Create a single booking entry
+            new_booking = Booking(
+                user_id=current_user.user_id,
+                event_id=event_id,
+                total_amount=total_amount,
+                payment_status="completed" # Assuming cash on delivery
+            )
+            db.session.add(new_booking)
+            db.session.commit() # Commit to get the booking_id
+
+            # Prepare data for PDF generation and email
+            tickets_for_pdf = []
+            name_index = 0
+            
+            # Create a BookingTicket entry for each individual ticket
+            for ticket_info in selected_tickets:
+                ticket_obj = Ticket.query.get(ticket_info['id'])
+                if not ticket_obj:
+                    flash("Ticket not found. Please try again.", "danger")
+                    db.session.rollback()
+                    return redirect(url_for('checkout'))
+                
+                for _ in range(ticket_info['quantity']):
+                    # Generate a unique QR code identifier
+                    unique_code = str(uuid.uuid4())
+                    
+                    # Create the check-in URL for the QR code (ADD THIS LINE)
+                    checkin_url = f"{BASE_URL}/check-in/{unique_code}"
+                    
+                    # Generate QR code image as base64 data URI
+                    qr = qrcode.QRCode(
+                        version=1,
+                        error_correction=qrcode.constants.ERROR_CORRECT_L,
+                        box_size=10,
+                        border=4,
+                    )
+                    qr.add_data(checkin_url)  # CHANGE THIS LINE: use checkin_url instead of unique_code
+                    qr.make(fit=True)
+                    
+                    img = qr.make_image(fill_color="black", back_color="white")
+                    
+                    # Save the image to a BytesIO object
+                    img_buffer = BytesIO()
+                    img.save(img_buffer, format='PNG')
+                    
+                    # Encode the image data to base64
+                    img_base64 = b64encode(img_buffer.getvalue()).decode('utf-8')
+                    qr_data_uri = f"data:image/png;base64,{img_base64}"
+                    
+                    booking_ticket = BookingTicket(
+                        booking_id=new_booking.booking_id,
+                        ticket_id=ticket_obj.ticket_id,
+                        quantity=1, 
+                        qr_code=unique_code
+                    )
+                    db.session.add(booking_ticket)
+                    tickets_for_pdf.append({
+                        'type': ticket_obj.type,
+                        'price': ticket_obj.price,
+                        'qr_code_data': unique_code,
+                        'qr_code_image': qr_data_uri,
+                        'checkin_url': checkin_url,  # ADD THIS LINE (optional, for reference)
+                        'attendee_name': attendee_names[name_index]
+                    })
+                    name_index += 1
+            
+            db.session.commit()
+
+            # Generate the PDF with tickets
+            html_content = render_template(
+                'tickets_pdf.html',
+                event=event,
+                booking=new_booking,
+                tickets=tickets_for_pdf
+            )
+            pdf_data = HTML(string=html_content).write_pdf()
+
+            # Send the email with the PDF attachment
+            msg = Message(
+                subject=f"Your Tickets for {event.title}",
+                sender=app.config['MAIL_DEFAULT_SENDER'],
+                recipients=[current_user.email]
+            )
+            msg.body = f"Hello {current_user.name},\n\nThank you for your booking! Please find your tickets attached.\n\nEnjoy the event!"
+            msg.attach(f"{event.title}_tickets.pdf", "application/pdf", pdf_data)
+            mail.send(msg)
+
+            # Clear the session data and redirect to a confirmation page
+            session.pop('selected_tickets', None)
+            session.pop('total_amount', None)
+            session.pop('event_id', None)
+            
+            flash("Your booking is complete and tickets have been sent to your email!", "success")
+            return redirect(url_for('eventhive'))
+
+        except Exception as e:
+            db.session.rollback()
+            print(f"Error during checkout: {e}")
+            flash(f"An error occurred during booking: {str(e)}", "danger")
+            return redirect(url_for('checkout'))
+
+    return render_template('checkout.html', event=event, selected_tickets=selected_tickets, total_amount=total_amount)
+    
+@app.route('/check-in/<string:qr_code>')
+def check_in(qr_code):
+    """Enhanced check-in route that returns JSON for API calls and HTML for browser visits"""
+    booking_ticket = BookingTicket.query.filter_by(qr_code=qr_code).first()
+
+    if not booking_ticket:
+        if request.headers.get('Accept', '').startswith('application/json'):
+            return jsonify({"status": "error", "message": "❌ Invalid Ticket"}), 404
+        return render_template_string("""
+        <h2>❌ Invalid Ticket</h2>
+        <p>This QR code is not valid or has expired.</p>
+        <a href="{{ url_for('eventhive') }}">Back to Events</a>
+        """), 404
+    
+    # Check if the ticket has already been checked in
+    if booking_ticket.check_in_status == 'checked-in':
+        if request.headers.get('Accept', '').startswith('application/json'):
+            return jsonify({"status": "error", "message": "⚠️ Already Checked-In"}), 400
+        return render_template_string("""
+        <h2>⚠️ Already Checked-In</h2>
+        <p>This ticket has already been used for check-in.</p>
+        <p><strong>Event:</strong> {{ ticket.ticket.event.title }}</p>
+        <p><strong>Ticket Type:</strong> {{ ticket.ticket.type }}</p>
+        <a href="{{ url_for('eventhive') }}">Back to Events</a>
+        """, ticket=booking_ticket), 400
+    
+    # Update the status and commit
+    booking_ticket.check_in_status = 'checked-in'
+    db.session.commit()
+    
+    if request.headers.get('Accept', '').startswith('application/json'):
+        return jsonify({"status": "success", "message": "✅ Check-In Successful"})
+    
+    return render_template_string("""
+    <h2>✅ Check-In Successful!</h2>
+    <p><strong>Event:</strong> {{ ticket.ticket.event.title }}</p>
+    <p><strong>Ticket Type:</strong> {{ ticket.ticket.type }}</p>
+    <p><strong>Attendee:</strong> {{ booking.user.name }}</p>
+    <p><strong>Check-in Time:</strong> {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+    <a href="{{ url_for('eventhive') }}">Back to Events</a>
+    """, ticket=booking_ticket, booking=booking_ticket.booking, now=datetime.utcnow())
+
+# Add this new scanner route for event staff
+@app.route('/scanner')
+@login_required
+def scanner():
+    """QR Code scanner page for event staff"""
+    if current_user.role != "organizer":
+        flash("Access denied. Only organizers can access the scanner.")
+        return redirect(url_for('eventhive'))
+    
+    return render_template_string(f"""
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EventHive Check-In Scanner</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body {{ 
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; 
+        padding: 16px; 
+        background-color: #f4f4f4;
+    }}
+    .container {{
+        max-width: 400px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }}
+    #reader {{ 
+        width: 100%; 
+        max-width: 320px; 
+        margin: 0 auto;
+    }}
+    #result {{ 
+        margin-top: 20px; 
+        padding: 15px;
+        border-radius: 5px;
+        font-size: 16px; 
+        text-align: center;
+        font-weight: bold;
+    }}
+    .success {{ background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }}
+    .error {{ background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }}
+    .back-btn {{
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+    }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>EventHive Check-In Scanner</h2>
+    <p>Scan ticket QR codes to check in attendees</p>
+    <div id="reader"></div>
+    <div id="result"></div>
+    <a href="{{{{ url_for('organizer_home') }}}}" class="back-btn">Back to Dashboard</a>
+  </div>
+  
+  <script>
+    let isScanning = true;
+    
+    function onScanSuccess(decodedText) {{
+        if (!isScanning) return;
+        
+        console.log('QR Code scanned:', decodedText);
+        
+        // Pause scanning temporarily
+        isScanning = false;
+        
+        // Show processing message
+        document.getElementById("result").innerHTML = "Processing...";
+        document.getElementById("result").className = "";
+        
+        // If QR is a full URL, use it; if it's just an ID, construct the URL
+        const url = decodedText.startsWith("http") ? decodedText : `{BASE_URL}/check-in/${{decodedText}}`;
+        
+        fetch(url, {{
+            headers: {{
+                'Accept': 'application/json'
+            }}
+        }})
+        .then(res => res.json())
+        .then(data => {{
+            const resultDiv = document.getElementById("result");
+            resultDiv.innerText = data.message;
+            resultDiv.className = data.status === "success" ? "success" : "error";
+            
+            // Resume scanning after 3 seconds
+            setTimeout(() => {{
+                isScanning = true;
+                resultDiv.innerHTML = "";
+                resultDiv.className = "";
+            }}, 3000);
+        }})
+        .catch(err => {{
+            console.error('Error:', err);
+            const resultDiv = document.getElementById("result");
+            resultDiv.innerText = "Network error or invalid QR code";
+            resultDiv.className = "error";
+            
+            // Resume scanning after 3 seconds
+            setTimeout(() => {{
+                isScanning = true;
+                resultDiv.innerHTML = "";
+                resultDiv.className = "";
+            }}, 3000);
+        }});
+    }}
+    
+    function onScanError(errorMessage) {{
+        // Ignore scan errors (they happen frequently while scanning)
+    }}
+    
+    // Initialize the scanner
+    new Html5QrcodeScanner("reader", {{ 
+        fps: 10, 
+        qrbox: 250,
+        experimentalFeatures: {{
+            useBarCodeDetectorIfSupported: true
+        }}
+    }}).render(onScanSuccess, onScanError);
+  </script>
+</body>
+</html>
+    """)
+
     
 @app.route('/logout')
 @login_required
@@ -656,4 +1037,4 @@ def initdb():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all() 
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)  # Make sure host="0.0.0.0" is there
