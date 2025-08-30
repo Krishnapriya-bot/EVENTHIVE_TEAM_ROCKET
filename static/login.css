@@ -1,0 +1,97 @@
+/* Full page background */
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #000000 0%, #000000 35%, #351f00 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Glassy container */
+.container {
+  background: rgba(255, 255, 255, 0.1); /* translucent */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 15px;
+  padding: 40px;
+  width: 350px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Heading */
+.container h2 {
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+/* Input fields */
+.container input {
+ width: 300px;
+  padding: 12px;
+  margin: 10px 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.container input::placeholder {
+  color: #ddd;
+}
+
+/* Button */
+.container button {
+  width: 50%;
+  padding: 12px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(135deg, #f7bc6a 0%, #cb9448 35%, #975E0E 100%);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.container button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(151, 94, 14, 0.5);
+}
+
+/* Links */
+.container a {
+  color: #f7bc6a;
+  text-decoration: none;
+}
+
+.container a:hover {
+  text-decoration: underline;
+}
+
+/* Flash messages */
+ul {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 15px;
+}
+
+ul li {
+  background: rgba(255, 0, 0, 0.2);
+  padding: 8px;
+  margin: 5px 0;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #ffdddd;
+}

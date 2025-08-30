@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Music Festival - EventHive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='screen3.css') }}"/>
+
+ 
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">EventHive</div>
+        <div class="user-profile">M</div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Breadcrumbs -->
+        <div class="breadcrumbs">
+            <a href="#" onclick="showMessage('Navigating to All Events')">All Events</a> / <a href="#" onclick="showMessage('Navigating to Live Music Festival')">Live Music Festival</a>
+        </div>
+
+        <!-- Event Content -->
+        <div class="event-content">
+            <!-- Main Event Content -->
+            <div class="event-main">
+                <!-- Event Header -->
+                <div class="event-header">
+                    <div class="event-image">
+                        <div class="event-badge">Registered</div>
+                        <div class="event-title">Live Music Festival</div>
+                        <div class="event-tagline">Experience live music, local food and beverages</div>
+                        
+                        <div class="image-controls">
+                            <div class="control-btn" onclick="previousImage()">❮</div>
+                            <div class="control-btn" onclick="nextImage()">❯</div>
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button class="action-btn share-btn" onclick="shareEvent()">Share</button>
+                            <button class="action-btn report-btn" onclick="reportSpam()">Report Spam</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event Description -->
+                <div class="event-description">
+                    <h3>About This Event</h3>
+                    <p>Here it is, the 12th edition of our Live Musical Festival!</p>
+                    <p>Once again we assembled the most legendary bands in Rock history. Bands like Foo Fighters, Led Zeppelin and Pink Floyd will offer you the show of the century during our three days event.</p>
+                    <p>This is the perfect place for spending a nice time with your friends while listening to some of the most iconic rock songs of all times!</p>
+                    <p>For any additional information, please contact us at events@yourcompany.com.</p>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="event-sidebar">
+                <!-- Registration Section -->
+                <div class="register-section">
+                    <button class="register-btn" onclick="openWizard()">Register</button>
+                    <div class="event-date">Aug 14</div>
+                    <div class="event-time">1:30 PM - 5:30 PM</div>
+                    <div class="event-duration">Starts in... 2h 30M</div>
+                    <div class="event-duration">Add to calendar</div>
+                    
+                    <div class="add-to-calendar">
+                        <button class="calendar-btn apple-cal" onclick="addToCalendar('apple')">🍎</button>
+                        <button class="calendar-btn google-cal" onclick="addToCalendar('google')">G</button>
+                        <button class="calendar-btn outlook-cal" onclick="addToCalendar('outlook')">📧</button>
+                    </div>
+                </div>
+
+                <!-- Location Section -->
+                <div class="location-section">
+                    <h3><span class="location-icon">📍</span>Location</h3>
+                    <div class="location-address">
+                        Silver Auditorium,<br>
+                        ahmedabad,<br>
+                        gujarat
+                    </div>
+                    <div class="map-placeholder">
+                        Interactive Map
+                    </div>
+                </div>
+
+                <!-- Organizer Section -->
+                <div class="organizer-section">
+                    <h3>Organizer</h3>
+                    <div class="organizer-name">Marc Demo</div>
+                    <div class="organizer-contact">📞 +1 555-555-5556</div>
+                    <div class="organizer-contact">✉️ info@yourcompany.com</div>
+                    
+                    <div class="social-links">
+                        <h4>Share</h4>
+                        <div class="social-icons">
+                            <div class="social-icon facebook" onclick="shareOn('facebook')">f</div>
+                            <div class="social-icon instagram" onclick="shareOn('instagram')">📷</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Image carousel functionality
+        let currentImageIndex = 0;
+        const images = [
+            'Live Music Festival - Main Stage',
+            'Live Music Festival - Crowd View',
+            'Live Music Festival - Food Area',
+            'Live Music Festival - VIP Section'
+        ];
+
+        function previousImage() {
+            currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
+            showMessage(`Viewing: ${images[currentImageIndex]}`);
+        }
+
+        function nextImage() {
+            currentImageIndex = (currentImageIndex + 1) % images.length;
+            showMessage(`Viewing: ${images[currentImageIndex]}`);
+        }
+
+        function shareEvent() {
+            showMessage('Opening share menu...');
+        }
+
+        function reportSpam() {
+            showMessage('Report submitted. Thank you for helping keep our community safe.');
+        }
+
+        function openWizard() {
+            showMessage('Opening registration wizard...');
+        }
+
+        function addToCalendar(type) {
+            const calendarNames = {
+                'apple': 'Apple Calendar',
+                'google': 'Google Calendar',
+                'outlook': 'Outlook Calendar'
+            };
+            showMessage(`Adding event to ${calendarNames[type]}...`);
+        }
+
+        function shareOn(platform) {
+            const platformNames = {
+                'facebook': 'Facebook',
+                'twitter': 'Twitter/X',
+                'linkedin': 'LinkedIn',
+                'instagram': 'Instagram',
+                'youtube': 'YouTube'
+            };
+            showMessage(`Sharing event on ${platformNames[platform]}...`);
+        }
+
+        function showMessage(message) {
+            // Create and show a temporary notification
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #ff6b9d, #4facfe);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                z-index: 10000;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+                animation: slideIn 0.3s ease;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Add slide-in animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+                style.remove();
+            }, 3000);
+        }
+
+        // Add some interactive hover effects
+        document.addEventListener('DOMContentLoaded', function() {
+            const eventImage = document.querySelector('.event-image');
+            
+            eventImage.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.02)';
+                this.style.transition = 'transform 0.3s ease';
+            });
+            
+            eventImage.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>

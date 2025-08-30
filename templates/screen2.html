@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventHive - My Bookings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='screen2.css') }}"/>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">EventHive</div>
+        <div class="header-right">
+            <span class="my-bookings">My bookings</span>
+            <div class="profile-section">
+                <div class="notification-icon">🔔</div>
+                <div class="profile-avatar">JD</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <h1 class="page-title">Attendee Home page</h1>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <div class="filter-group">
+                <select class="filter-select">
+                    <option>Category</option>
+                    <option>Music shows</option>
+                    <option>Comedy shows</option>
+                    <option>Workshops</option>
+                    <option>Sports</option>
+                    <option>Plays</option>
+                    <option>Adventure</option>
+                    <option>Performances</option>
+                </select>
+                <select class="filter-select">
+                    <option>Date</option>
+                    <option>Today</option>
+                    <option>This Week</option>
+                    <option>This Month</option>
+                    <option>Next Month</option>
+                </select>
+            </div>
+            <div class="search-container">
+                <input type="text" class="search-input" placeholder="search events">
+                <span class="search-icon">🔍</span>
+            </div>
+        </div>
+
+        <!-- Events Grid -->
+        <div class="events-grid">
+            <!-- Event Card 1 -->
+            <div class="event-card">
+                <div class="event-image" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%23ff6b9d%22/><text x=%22160%22 y=%2290%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22Arial%22 font-size=%2216%22 fill=%22white%22>🎵 Music Festival</text></svg>');">
+                    <div class="event-status status-published">Published</div>
+                </div>
+                <div class="event-content">
+                    <h3 class="event-title">Live Music Festival</h3>
+                    <p class="event-description">Experience live music, local food and beverages.</p>
+                    <div class="event-details">
+                        <span class="event-date">Tonight • 8:00 PM</span>
+                        <span class="event-location">Music Venue</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Card 2 -->
+            <div class="event-card">
+                <div class="event-image" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%234facfe%22/><text x=%22160%22 y=%2290%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22Arial%22 font-size=%2216%22 fill=%22white%22>💎 Jewelry Exhibition</text></svg>');">
+                    <div class="event-status status-published">Published</div>
+                </div>
+                <div class="event-content">
+                    <h3 class="event-title">Jewelry exhibition</h3>
+                    <p class="event-description">Discover unique jewelry showcasing craftsmanship and innovation. A must-visit for jewelry enthusiasts.</p>
+                    <div class="event-details">
+                        <span class="event-date">Aug 31 • 10:00 AM</span>
+                        <span class="event-location">Gallery Space</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Card 3 -->
+            <div class="event-card">
+                <div class="event-image" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%2300f2fe%22/><text x=%22160%22 y=%2290%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22Arial%22 font-size=%2216%22 fill=%22white%22>🎾 Tennis Tournament</text></svg>');">
+                    <div class="event-status status-unpublished">Registration not yet open</div>
+                </div>
+                <div class="event-content">
+                    <h3 class="event-title">Tennis tournament</h3>
+                    <p class="event-description">Join our annual tennis tournament and compete with players from around the region.</p>
+                    <div class="event-details">
+                        <span class="event-date">Sep 15 • 9:00 AM</span>
+                        <span class="event-location">Sports Center</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Card 4 -->
+            <div class="event-card">
+                <div class="event-image" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%23ffa726%22/><text x=%22160%22 y=%2290%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22Arial%22 font-size=%2216%22 fill=%22white%22>💎 Jewelry Exhibition</text></svg>');">
+                    <div class="event-status status-published">Published</div>
+                </div>
+                <div class="event-content">
+                    <h3 class="event-title">Jewelry exhibition</h3>
+                    <p class="event-description">Explore exquisite jewelry pieces and meet talented artisans in this exclusive showcase.</p>
+                    <div class="event-details">
+                        <span class="event-date">Sep 20 • 2:00 PM</span>
+                        <span class="event-location">Art Gallery</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Card 5 -->
+            <div class="event-card">
+                <div class="event-image" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%23ff6b9d%22/><text x=%22160%22 y=%2290%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22Arial%22 font-size=%2216%22 fill=%22white%22>🎵 Live Music Festival</text></svg>');">
+                    <div class="event-status status-unpublished">Unpublished</div>
+                </div>
+                <div class="event-content">
+                    <h3 class="event-title">Live Music Festival</h3>
+                    <p class="event-description">Experience live music, local food and beverages in an outdoor festival setting.</p>
+                    <div class="event-details">
+                        <span class="event-date">Oct 1 • 6:00 PM</span>
+                        <span class="event-location">Park Venue</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Card 6 -->
+            <div class="event-card">
+                <div class="event-image" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%2300f2fe%22/><text x=%22160%22 y=%2290%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22Arial%22 font-size=%2216%22 fill=%22white%22>🎾 Tennis Match</text></svg>');">
+                    <div class="event-status status-unpublished">Unpublished</div>
+                </div>
+                <div class="event-content">
+                    <h3 class="event-title">Tennis Match</h3>
+                    <p class="event-description">Watch professional tennis players compete in this exciting championship match.</p>
+                    <div class="event-details">
+                        <span class="event-date">Oct 10 • 3:00 PM</span>
+                        <span class="event-location">Tennis Court</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Card 7 -->
+            <div class="event-card">
+                <div class="event-image" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%23ffa726%22/><text x=%22160%22 y=%2290%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22Arial%22 font-size=%2216%22 fill=%22white%22>💎 Jewelry Exhibition</text></svg>');">
+                    <div class="event-status status-published">Published</div>
+                </div>
+                <div class="event-content">
+                    <h3 class="event-title">Jewelry exhibition</h3>
+                    <p class="event-description">A premium collection of handcrafted jewelry featuring contemporary designs and traditional craftsmanship.</p>
+                    <div class="event-details">
+                        <span class="event-date">Oct 15 • 11:00 AM</span>
+                        <span class="event-location">Exhibition Hall</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Card 8 -->
+            <div class="event-card">
+                <div class="event-image" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%234facfe%22/><text x=%22160%22 y=%2290%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22Arial%22 font-size=%2216%22 fill=%22white%22>💎 Jewelry Exhibition</text></svg>');">
+                    <div class="event-status status-published">Published</div>
+                </div>
+                <div class="event-content">
+                    <h3 class="event-title">Jewelry exhibition</h3>
+                    <p class="event-description">Discover rare gems and exclusive jewelry pieces from renowned designers worldwide.</p>
+                    <div class="event-details">
+                        <span class="event-date">Oct 20 • 1:00 PM</span>
+                        <span class="event-location">Luxury Gallery</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Card 9 -->
+            <div class="event-card">
+                <div class="event-image" style="background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22320%22 height=%22180%22 viewBox=%220 0 320 180%22><rect width=%22320%22 height=%22180%22 fill=%22%23ff6b9d%22/><text x=%22160%22 y=%2290%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22Arial%22 font-size=%2216%22 fill=%22white%22>🎵 Live Music Festival</text></svg>');">
+                    <div class="event-status status-published">Published</div>
+                </div>
+                <div class="event-content">
+                    <h3 class="event-title">Live Music Festival</h3>
+                    <p class="event-description">Experience live music, local food and beverages in this amazing outdoor festival.</p>
+                    <div class="event-details">
+                        <span class="event-date">Nov 1 • 7:00 PM</span>
+                        <span class="event-location">Festival Grounds</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Filter functionality
+        document.querySelectorAll('.filter-select').forEach(select => {
+            select.addEventListener('change', function() {
+                console.log(`Filter changed: ${this.value}`);
+                // Add filter logic here
+            });
+        });
+
+        // Search functionality
+        document.querySelector('.search-input').addEventListener('input', function() {
+            console.log(`Search: ${this.value}`);
+            // Add search logic here
+        });
+
+        // Event card click functionality
+        document.querySelectorAll('.event-card').forEach(card => {
+            card.addEventListener('click', function() {
+                console.log('Event card clicked');
+                // Add navigation to event details page
+            });
+        });
+    </script>
+</body>
+</html>
