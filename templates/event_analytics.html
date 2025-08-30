@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics - {{ event.title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body class="bg-gray-900 text-white min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+      <!-- Header -->
+      <div class="flex justify-between items-center mb-8">
+        <div>
+          <h1 class="text-3xl font-bold mb-2">Event Analytics</h1>
+          <h2 class="text-xl text-gray-300">{{ event.title }}</h2>
+          <p class="text-gray-400">
+            {{ event.start_datetime.strftime('%B %d, %Y at %I:%M %p') }}
+          </p>
+        </div>
+        <div class="flex space-x-4">
+          <a
+            href="{{ url_for('manage_tickets', event_id=event.event_id) }}"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            <i class="fas fa-ticket-alt mr-2"></i>Manage Tickets
+          </a>
+          <a
+            href="{{ url_for('organizer_home') }}"
+            class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            <i class="fas fa-arrow-left mr-2"></i>Back
+          </a>
+        </div>
+      </div>
+
+      <!-- Key Metrics -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-gray-800 rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="bg-green-500 rounded-full p-3 mr-4">
+              <i class="fas fa-shopping-cart text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-green-400">
+                {{ total_bookings }}
+              </h3>
+              <p class="text-gray-400">Total Bookings</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="bg-blue-500 rounded-full p-3 mr-4">
+              <i class="fas fa-users text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-blue-400">
+                {{ total_attendees }}
+              </h3>
+              <p class="text-gray-400">Total Attendees</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="bg-yellow-500 rounded-full p-3 mr-4">
+              <i class="fas fa-rupee-sign text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-yellow-400">
+                ₹{{ "%.0f"|format(total_revenue) }}
+              </h3>
+              <p class="text-gray-400">Total Revenue</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-6">
+          <div class="flex items-center">
+            <div class="bg-purple-500 rounded-full p-3 mr-4">
+              <i class="fas fa-user-check text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-2xl font-bold text-purple-400">
+                {{ checked_in }}
+              </h3>
+              <p class="text-gray-400">Checked In</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Ticket Sales Breakdown -->
+        <div class="bg-gray-800 rounded-lg p-6">
+          <h3 class="text-xl font-semibold mb-6 text-green-400">
+            <i class="fas fa-chart-pie mr-2"></i>Ticket Sales Breakdown
+          </h3>
+
+          {% if ticket_stats %}
+          <div class="space-y-4">
+            {% for ticket_type, stats in ticket_stats.items() %}
+            <div class="bg-gray-700 rounded-lg p-4">
+              <div class="flex justify-between items-center mb-2">
+                <h4 class="font-medium">{{ ticket_type }}</h4>
+                <span class="text-sm text-gray-400"
+                  >{{ stats.sold }}/{{ stats.total }} sold</span
+                >
+              </div>
+
+              <div class="w-full bg-gray-600 rounded-full h-2 mb-3">
+                <div class="bg-green-500 h-2 rounded-full" style="width: 100%">
+                  {{ (stats.sold / stats.total * 100) if stats.total > 0 else 0
+                  }}
+                </div>
+              </div>
+
+              <div class="grid grid-cols-3 gap-4 text-sm">
+                <div>
+                  <span class="text-gray-400 block">Sold</span>
+                  <span class="font-semibold">{{ stats.sold }}</span>
+                </div>
+                <div>
+                  <span class="text-gray-400 block">Remaining</span>
+                  <span class="font-semibold">{{ stats.remaining }}</span>
+                </div>
+                <div>
+                  <span class="text-gray-400 block">Revenue</span>
+                  <span class="font-semibold text-green-400"
+                    >₹{{ "%.0f"|format(stats.revenue) }}</span
+                  >
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-8 text-gray-400">
+            <i class="fas fa-ticket-alt text-4xl mb-4"></i>
+            <p>No ticket sales data available</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Check-in Status -->
+        <div class="bg-gray-800 rounded-lg p-6">
+          <h3 class="text-xl font-semibold mb-6 text-blue-400">
+            <i class="fas fa-qrcode mr-2"></i>Check-in Status
+          </h3>
+
+          {% if total_attendees > 0 %}
+          <div class="text-center mb-6">
+            <div
+              class="relative inline-flex items-center justify-center w-32 h-32"
+            >
+              <svg class="w-32 h-32 transform -rotate-90">
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="56"
+                  stroke="currentColor"
+                  stroke-width="8"
+                  fill="transparent"
+                  class="text-gray-600"
+                ></circle>
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="56"
+                  stroke="currentColor"
+                  stroke-width="8"
+                  fill="transparent"
+                  stroke-dasharray="{{ 351.86 }}"
+                  stroke-dashoffset="{{ 351.86 - (351.86 * checked_in / total_attendees) }}"
+                  class="text-green-500 transition-all duration-1000"
+                ></circle>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <div class="text-center">
+                  <div class="text-2xl font-bold text-green-400">
+                    {{ "%.0f"|format((checked_in / total_attendees * 100) if
+                    total_attendees > 0 else 0) }}%
+                  </div>
+                  <div class="text-xs text-gray-400">Checked In</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4 text-center">
+            <div class="bg-gray-700 rounded-lg p-4">
+              <div class="text-xl font-bold text-green-400">
+                {{ checked_in }}
+              </div>
+              <div class="text-sm text-gray-400">Checked In</div>
+            </div>
+            <div class="bg-gray-700 rounded-lg p-4">
+              <div class="text-xl font-bold text-orange-400">
+                {{ total_attendees - checked_in }}
+              </div>
+              <div class="text-sm text-gray-400">Pending</div>
+            </div>
+          </div>
+          {% else %}
+          <div class="text-center py-8 text-gray-400">
+            <i class="fas fa-users text-4xl mb-4"></i>
+            <p>No attendees yet</p>
+          </div>
+          {% endif %}
+
+          <div class="mt-6">
+            <a
+              href="{{ url_for('attendees', event_id=event.event_id) }}"
+              class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg text-center block transition-colors"
+            >
+              <i class="fas fa-users mr-2"></i>View All Attendees
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="mt-8 bg-gray-800 rounded-lg p-6">
+        <h3 class="text-xl font-semibold mb-6 text-yellow-400">
+          <i class="fas fa-bolt mr-2"></i>Quick Actions
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <a
+            href="{{ url_for('create_event', event_id=event.event_id) }}"
+            class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg text-center transition-colors"
+          >
+            <i class="fas fa-edit text-2xl mb-2 block"></i>
+            <span class="font-semibold">Edit Event</span>
+          </a>
+
+          <a
+            href="{{ url_for('duplicate_event', event_id=event.event_id) }}"
+            class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg text-center transition-colors"
+          >
+            <i class="fas fa-copy text-2xl mb-2 block"></i>
+            <span class="font-semibold">Duplicate Event</span>
+          </a>
+
+          <a
+            href="{{ url_for('toggle_event_status', event_id=event.event_id) }}"
+            class="bg-{{ 'yellow' if event.status == 'published' else 'green' }}-600 hover:bg-{{ 'yellow' if event.status == 'published' else 'green' }}-700 text-white p-4 rounded-lg text-center transition-colors"
+          >
+            <i
+              class="fas fa-{{ 'eye-slash' if event.status == 'published' else 'eye' }} text-2xl mb-2 block"
+            ></i>
+            <span class="font-semibold"
+              >{{ 'Unpublish' if event.status == 'published' else 'Publish'
+              }}</span
+            >
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
