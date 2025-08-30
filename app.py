@@ -235,7 +235,10 @@ def login():
                 return redirect(url_for('verify_otp'))
             login_user(user)
             flash("Login successful!")
-            return redirect(url_for('dashboard'))
+            if user.role == "organizer":
+                return redirect(url_for('organizer_home'))
+            else:
+                return redirect(url_for('dashboard')) 
         else:
             flash("Invalid credentials!")
             return redirect(url_for('login'))
@@ -246,6 +249,131 @@ def login():
 @login_required
 def dashboard():
     return f"Hello, {current_user.name}! This is your dashboard."
+
+@app.route('/organizer_home')
+@login_required
+def organizer_home():
+    if current_user.role != "organizer":
+        flash("Access denied!")
+        return redirect(url_for('dashboard'))
+
+    # NEW: Pagination & filters
+    page = request.args.get('page', 1, type=int)
+    per_page = 6
+
+    # Optional filters
+    category_filter = request.args.get('category', None)
+    search_query = request.args.get('search', None)
+
+    query = Event.query.filter_by(organizer_id=current_user.user_id)
+    if category_filter:
+        query = query.filter_by(category=category_filter)
+    if search_query:
+        query = query.filter(Event.title.ilike(f"%{search_query}%"))
+
+    events = query.order_by(Event.start_datetime.desc()).paginate(page=page, per_page=per_page)
+
+    return render_template(
+        'organizer_home.html',
+        events=events,
+        name=current_user.name,
+        category_filter=category_filter,
+        search_query=search_query
+    )
+
+@app.route('/create_event', methods=['GET', 'POST'])
+@app.route('/create_event/<int:event_id>', methods=['GET', 'POST'])
+@login_required
+def create_event(event_id=None):
+    if current_user.role != "organizer":
+        flash("Access denied. Only organizers can create events.")
+        return redirect(url_for('dashboard'))
+
+    # Categories dropdown
+    categories = ["General", "Workshop", "Conference", "Meetup"]
+
+    # If editing an existing event
+    event = None
+    if event_id:
+        event = Event.query.get_or_404(event_id)
+        if event.organizer_id != current_user.user_id:
+            flash("Access denied. You cannot edit this event.")
+            return redirect(url_for('organizer_home'))
+
+    if request.method == 'POST':
+        title = request.form['title']
+        description = request.form['description']
+        start_dt = datetime.strptime(request.form['start_datetime'], '%Y-%m-%dT%H:%M')
+        end_dt = datetime.strptime(request.form['end_datetime'], '%Y-%m-%dT%H:%M')
+        location = request.form['location']
+        category = request.form['category']
+        status = "published" if 'publish' in request.form else "draft"
+
+        if event:  # Update existing event
+            event.title = title
+            event.description = description
+            event.start_datetime = start_dt
+            event.end_datetime = end_dt
+            event.location = location
+            event.category = category
+            event.status = status
+        else:  # Create new event
+            event = Event(
+                organizer_id=current_user.user_id,
+                title=title,
+                description=description,
+                start_datetime=start_dt,
+                end_datetime=end_dt,
+                location=location,
+                category=category,
+                status=status
+            )
+            db.session.add(event)
+
+        db.session.commit()
+        flash(f"Event '{title}' saved successfully!")
+        return redirect(url_for('organizer_home'))
+
+    return render_template('create_event.html', event=event, categories=categories)
+
+
+@app.route('/toggle_event_status/<int:event_id>')
+@login_required
+def toggle_event_status(event_id):
+    event = Event.query.get_or_404(event_id)
+    if event.organizer_id != current_user.user_id:
+        flash("Access denied!")
+        return redirect(url_for('organizer_home'))
+    event.status = "draft" if event.status == "published" else "published"
+    db.session.commit()
+    flash(f"Event '{event.title}' status updated to {event.status}.")
+    return redirect(url_for('organizer_home'))
+
+@app.route('/attendees/<int:event_id>')
+@login_required
+def attendees(event_id):
+    event = Event.query.get_or_404(event_id)
+    if event.organizer_id != current_user.user_id:
+        flash("Access denied!")
+        return redirect(url_for('organizer_home'))
+
+    # Filters
+    gender_filter = request.args.get('gender', None)
+    attended_filter = request.args.get('attended', None)
+
+    query = Booking.query.filter_by(event_id=event_id).join(User)
+    if gender_filter:
+        query = query.filter(User.role==gender_filter)
+    if attended_filter:
+        if attended_filter.lower() == "attended":
+            query = query.join(BookingTicket).filter(BookingTicket.check_in_status=="attended")
+        elif attended_filter.lower() == "not attended":
+            query = query.join(BookingTicket).filter(BookingTicket.check_in_status!="attended")
+
+    bookings = query.all()
+    return render_template('attendees.html', bookings=bookings, event=event)
+
+
 
 # -------- LOGOUT --------
 @app.route('/logout')

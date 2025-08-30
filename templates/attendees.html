@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Attendees - {{ event.title }}</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    />
+  </head>
+  <body class="p-4">
+    <h2>Attendees - {{ event.title }}</h2>
+
+    <!-- Filters -->
+    <form method="get" class="row g-2 mb-3">
+      <div class="col-md-3">
+        <select name="gender" class="form-select">
+          <option value="">All Genders</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select name="attended" class="form-select">
+          <option value="">All</option>
+          <option value="attended">Attended</option>
+          <option value="not attended">Not Attended</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-primary">Filter</button>
+      </div>
+    </form>
+
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Total Tickets</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for booking in bookings %}
+        <tr>
+          <td>{{ booking.user.name }}</td>
+          <td>{{ booking.user.email }}</td>
+          <td>{{ booking.user.phone }}</td>
+          <td>{{ booking.tickets|length }}</td>
+          <td>
+            {% set statuses = [] %} {% for bt in booking.tickets %} {% set _ =
+            statuses.append(bt.check_in_status) %} {% endfor %} {{ 'Attended' if
+            'attended' in statuses else 'Pending' }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <a href="{{ url_for('organizer_home') }}" class="btn btn-secondary"
+      >Back to Dashboard</a
+    >
+  </body>
+</html>
