@@ -235,7 +235,10 @@ def login():
                 return redirect(url_for('verify_otp'))
             login_user(user)
             flash("Login successful!")
-            return redirect(url_for('dashboard'))
+            if user.role == "organizer":
+                return redirect(url_for('organizer_home'))
+            else:
+                return redirect(url_for('dashboard')) 
         else:
             flash("Invalid credentials!")
             return redirect(url_for('login'))
@@ -246,6 +249,15 @@ def login():
 @login_required
 def dashboard():
     return f"Hello, {current_user.name}! This is your dashboard."
+
+@app.route('/organizer_home')
+@login_required
+def organizer_home():
+    if current_user.role != "organizer":
+        flash("Access denied!")
+        return redirect(url_for('dashboard'))
+    return render_template('organizer_home.html', name=current_user.name)
+
 
 # -------- LOGOUT --------
 @app.route('/logout')
