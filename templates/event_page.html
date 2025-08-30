@@ -64,7 +64,11 @@
         <!-- Sidebar -->
         <div class="event-sidebar">
           <div class="register-section">
-            <a href="{{ url_for('join') }}">Join</a>
+            <a
+              href="{{ url_for('join_event', event_id=event.event_id) }}"
+              class="btn"
+              >Join</a
+            >
             <div class="event-date">
               {{ event.start_datetime.strftime('%b %d, %Y') }}
             </div>

@@ -6,13 +6,15 @@
     <title>{{ 'Edit Event' if event else 'Create Event' }}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='create.css') }}">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4xn+L+Z9K3h2sP4xGf09n77/3o7lWf3xT7gG+3uA2uQ="
+    crossorigin=""/>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <div class="header">
-          <div class="logo">EventHive</div>
-
+            <div class="logo">EventHive</div>
             <h1>
                 <i class="fas fa-calendar-plus"></i>
                 {{ 'Edit Event' if event else 'Add New Event' }}
@@ -22,50 +24,40 @@
             </a>
         </div>
 
-        <!-- Flash Messages -->
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for message in messages %}
-                        <div class="flash-message">{{ message }}</div>
-                    {% endfor %}
-                </div>
-            {% endif %}
-        {% endwith %}
-
-        <form method="POST" enctype="multipart/form-data" id="event-form">
+        <form method="POST" enctype="multipart/form-data">
             <div class="form-grid">
-                <!-- Left Column -->
                 <div class="left-column">
-                    <!-- Basic Information -->
                     <div class="card">
                         <h3 class="card-title">
                             <i class="fas fa-info-circle"></i>Event Information
                         </h3>
                         
                         <div class="form-group">
-                            <label for="title">Event Name *</label>
-                            <input type="text" id="title" name="title" required 
+                            <label>Event Name *</label>
+                            <input type="text" name="title" required 
                                    value="{{ event.title if event else '' }}"
                                    placeholder="Enter event name">
                         </div>
 
                         <div class="form-group">
-                            <label for="description">Description</label>
-                            <textarea id="description" name="description" rows="4" 
+                            <label>Description</label>
+                            <textarea name="description" rows="4" 
                                       placeholder="Describe your event...">{{ event.description if event else '' }}</textarea>
                         </div>
-
+                        
                         <div class="form-group">
-                            <label for="location">Location *</label>
-                            <input type="text" id="location" name="location" required
+                            <label>Location *</label>
+                            <input type="text" id="location_input" name="location" required 
                                    value="{{ event.location if event else '' }}"
-                                   placeholder="Enter event venue or address">
+                                   placeholder="Search for event venue or address">
+                            <div id="map-container" style="height: 400px; margin-top: 10px; border-radius: 8px;"></div>
+                            <input type="hidden" name="latitude" id="latitude" value="{{ event.latitude if event else '' }}">
+                            <input type="hidden" name="longitude" id="longitude" value="{{ event.longitude if event else '' }}">
                         </div>
 
                         <div class="form-group">
-                            <label for="category">Category *</label>
-                            <select id="category" name="category" required>
+                            <label>Category *</label>
+                            <select name="category" required>
                                 <option value="">Select Category</option>
                                 {% for cat in categories %}
                                     <option value="{{ cat }}" {{ 'selected' if event and event.category == cat else '' }}>
@@ -76,7 +68,6 @@
                         </div>
                     </div>
 
-                    <!-- Date & Time -->
                     <div class="card">
                         <h3 class="card-title">
                             <i class="fas fa-clock"></i>Date & Time
@@ -84,44 +75,42 @@
                         
                         <div class="date-grid">
                             <div class="form-group">
-                                <label for="start_datetime">Start Date & Time *</label>
-                                <input type="datetime-local" id="start_datetime" name="start_datetime" required 
+                                <label>Start Date & Time *</label>
+                                <input type="datetime-local" name="start_datetime" required 
                                        value="{{ event.start_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}">
                             </div>
 
                             <div class="form-group">
-                                <label for="end_datetime">End Date & Time *</label>
-                                <input type="datetime-local" id="end_datetime" name="end_datetime" required 
+                                <label>End Date & Time *</label>
+                                <input type="datetime-local" name="end_datetime" required 
                                        value="{{ event.end_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}">
                             </div>
                         </div>
 
                         <div class="date-grid">
                             <div class="form-group">
-                                <label for="registration_start">Registration Start</label>
-                                <input type="datetime-local" id="registration_start" name="registration_start"
+                                <label>Registration Start</label>
+                                <input type="datetime-local" name="registration_start"
                                        value="{{ event.registration_start.strftime('%Y-%m-%dT%H:%M') if event and event.registration_start else '' }}">
                             </div>
 
                             <div class="form-group">
-                                <label for="registration_end">Registration End</label>
-                                <input type="datetime-local" id="registration_end" name="registration_end"
+                                <label>Registration End</label>
+                                <input type="datetime-local" name="registration_end"
                                        value="{{ event.registration_end.strftime('%Y-%m-%dT%H:%M') if event and event.registration_end else '' }}">
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="max_attendees">Maximum Attendees</label>
-                            <input type="number" id="max_attendees" name="max_attendees" min="1"
+                            <label>Maximum Attendees</label>
+                            <input type="number" name="max_attendees" min="1"
                                    value="{{ event.max_attendees if event and event.max_attendees else '' }}"
                                    placeholder="Leave empty for unlimited">
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Column -->
                 <div class="right-column">
-                    <!-- Ticket Types -->
                     {% if not event %}
                     <div class="card">
                         <h3 class="card-title">
@@ -143,11 +132,11 @@
                                     </div>
                                     <div class="form-group">
                                         <label>Price (₹)</label>
-                                        <input type="number" name="ticket_price[]" step="0.01" min="0" placeholder="0.00">
+                                        <input type="number" name="ticket_price[]" step="0.01" min="0">
                                     </div>
                                     <div class="form-group">
                                         <label>Quantity</label>
-                                        <input type="number" name="ticket_quantity[]" min="1" placeholder="1">
+                                        <input type="number" name="ticket_quantity[]" min="1">
                                     </div>
                                 </div>
                             </div>
@@ -159,7 +148,6 @@
                     </div>
                     {% endif %}
 
-                    <!-- Event Photo -->
                     <div class="card">
                         <h3 class="card-title">
                             <i class="fas fa-image"></i>Event Photo
@@ -167,7 +155,7 @@
                         
                         {% if event and event.image_url %}
                         <div class="existing-image">
-                            <img src="{{ event.image_url }}" alt="Event image" style="max-width: 100%; height: auto; border-radius: 8px;">
+                            <img src="{{ event.image_url }}" alt="Event image">
                         </div>
                         {% endif %}
                         
@@ -181,7 +169,6 @@
                         </div>
                     </div>
 
-                    <!-- Publish Settings -->
                     <div class="card">
                         <h3 class="card-title">
                             <i class="fas fa-cog"></i>Publish Settings
@@ -201,7 +188,6 @@
                 </div>
             </div>
 
-            <!-- Action Buttons -->
             <div class="action-buttons">
                 <button type="submit" class="submit-btn">
                     <i class="fas fa-save"></i>
@@ -215,6 +201,20 @@
         </form>
     </div>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-2aA4i+P2j2y+oF2+g4+wK4n2/wD3p4x82u+Vf3xT2iU="
+    crossorigin=""></script>
+    
     <script>
         let ticketCount = 1;
         
@@ -241,11 +241,11 @@
                         </div>
                         <div class="form-group">
                             <label>Price (₹)</label>
-                            <input type="number" name="ticket_price[]" step="0.01" min="0" placeholder="0.00">
+                            <input type="number" name="ticket_price[]" step="0.01" min="0">
                         </div>
                         <div class="form-group">
                             <label>Quantity</label>
-                            <input type="number" name="ticket_quantity[]" min="1" placeholder="1">
+                            <input type="number" name="ticket_quantity[]" min="1">
                         </div>
                     </div>
                 </div>
@@ -255,46 +255,27 @@
         }
         
         function removeTicketType(button) {
-            if (document.querySelectorAll('.ticket-type').length > 1) {
-                button.closest('.ticket-type').remove();
-            } else {
-                alert('At least one ticket type is required.');
-            }
+            button.closest('.ticket-type').remove();
         }
 
         // Image upload preview
         document.getElementById('image-upload').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
-                // Validate file type
-                if (!file.type.startsWith('image/')) {
-                    alert('Please select a valid image file.');
-                    this.value = '';
-                    return;
-                }
-                
-                // Validate file size (16MB max)
-                if (file.size > 16 * 1024 * 1024) {
-                    alert('Image file size must be less than 16MB.');
-                    this.value = '';
-                    return;
-                }
-                
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const preview = document.createElement('img');
                     preview.src = e.target.result;
                     preview.className = 'preview-image';
-                    preview.style.cssText = 'max-width: 100%; height: auto; border-radius: 8px; margin-bottom: 10px;';
                     
                     const container = document.querySelector('.upload-area').parentNode;
-                    const existingPreview = container.querySelector('.preview-image');
-                    const existingImage = container.querySelector('.existing-image');
-                    
+                    let existingPreview = container.querySelector('.existing-image');
+                    if (existingPreview) {
+                        existingPreview.remove();
+                    }
+                    existingPreview = container.querySelector('.preview-image');
                     if (existingPreview) {
                         existingPreview.replaceWith(preview);
-                    } else if (existingImage) {
-                        existingImage.replaceWith(preview);
                     } else {
                         container.insertBefore(preview, container.querySelector('.upload-area'));
                     }
@@ -304,40 +285,18 @@
         });
 
         // Form validation
-        document.getElementById('event-form').addEventListener('submit', function(e) {
-            // Basic validation
-            const title = document.getElementById('title').value.trim();
-            const location = document.getElementById('location').value.trim();
-            const category = document.getElementById('category').value;
-            const startDateTime = document.getElementById('start_datetime').value;
-            const endDateTime = document.getElementById('end_datetime').value;
-            
-            if (!title || !location || !category || !startDateTime || !endDateTime) {
-                e.preventDefault();
-                alert('Please fill all required fields.');
-                return false;
-            }
-            
-            // Date validation
-            const startTime = new Date(startDateTime);
-            const endTime = new Date(endDateTime);
-            const now = new Date();
-            
-            if (startTime <= now) {
-                e.preventDefault();
-                alert('Start time must be in the future.');
-                return false;
-            }
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const startTime = new Date(document.querySelector('input[name="start_datetime"]').value);
+            const endTime = new Date(document.querySelector('input[name="end_datetime"]').value);
             
             if (endTime <= startTime) {
                 e.preventDefault();
-                alert('End time must be after start time.');
+                alert('End time must be after start time');
                 return false;
             }
             
-            // Registration period validation
-            const regStart = document.getElementById('registration_start').value;
-            const regEnd = document.getElementById('registration_end').value;
+            const regStart = document.querySelector('input[name="registration_start"]').value;
+            const regEnd = document.querySelector('input[name="registration_end"]').value;
             
             if (regStart && regEnd) {
                 const regStartTime = new Date(regStart);
@@ -345,74 +304,67 @@
                 
                 if (regEndTime <= regStartTime) {
                     e.preventDefault();
-                    alert('Registration end time must be after registration start time.');
+                    alert('Registration end time must be after registration start time');
                     return false;
                 }
                 
                 if (regEndTime > startTime) {
                     e.preventDefault();
-                    alert('Registration must end before the event starts.');
+                    alert('Registration must end before the event starts');
                     return false;
                 }
             }
+        });
+        
+        // Map Functionality
+        const locationInput = document.getElementById('location_input');
+        const latInput = document.getElementById('latitude');
+        const lonInput = document.getElementById('longitude');
+        const mapContainer = document.getElementById('map-container');
+        let map;
+        let marker;
+    
+        function initMap(lat, lon, zoom) {
+            map = L.map(mapContainer).setView([lat, lon], zoom);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
             
-            // Max attendees validation
-            const maxAttendees = document.getElementById('max_attendees').value;
-            if (maxAttendees && (isNaN(maxAttendees) || parseInt(maxAttendees) <= 0)) {
-                e.preventDefault();
-                alert('Maximum attendees must be a positive number.');
-                return false;
-            }
-            
-            // Ticket validation (only for new events)
-            const ticketTypes = document.querySelectorAll('select[name="ticket_type[]"]');
-            if (ticketTypes.length > 0) {
-                let hasValidTicket = false;
-                
-                for (let i = 0; i < ticketTypes.length; i++) {
-                    const type = ticketTypes[i].value;
-                    const price = document.querySelectorAll('input[name="ticket_price[]"]')[i].value;
-                    const quantity = document.querySelectorAll('input[name="ticket_quantity[]"]')[i].value;
-                    
-                    if (type && price !== '' && quantity !== '') {
-                        if (parseFloat(price) < 0) {
-                            e.preventDefault();
-                            alert('Ticket price cannot be negative.');
-                            return false;
+            marker = L.marker([lat, lon]).addTo(map);
+        }
+        
+        locationInput.addEventListener('change', function() {
+            const query = locationInput.value;
+            if (query) {
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        const { lat, lon } = data[0];
+                        
+                        latInput.value = lat;
+                        lonInput.value = lon;
+                        
+                        if (!map) {
+                            initMap(lat, lon, 15);
+                        } else {
+                            map.setView([lat, lon], 15);
+                            marker.setLatLng([lat, lon]);
                         }
-                        if (parseInt(quantity) <= 0) {
-                            e.preventDefault();
-                            alert('Ticket quantity must be positive.');
-                            return false;
-                        }
-                        hasValidTicket = true;
+                    } else {
+                        alert("Location not found. Please try a different query.");
                     }
-                }
-                
-                if (!hasValidTicket) {
-                    e.preventDefault();
-                    alert('Please provide at least one complete ticket type with price and quantity.');
-                    return false;
-                }
+                })
+                .catch(error => {
+                    console.error('Error fetching location:', error);
+                    alert("An error occurred while searching for the location.");
+                });
             }
-            
-            return true;
         });
-
-        // Auto-adjust minimum date for datetime inputs to prevent past dates
-        document.addEventListener('DOMContentLoaded', function() {
-            const now = new Date();
-            const minDateTime = now.toISOString().slice(0, 16);
-            
-            document.getElementById('start_datetime').min = minDateTime;
-            document.getElementById('end_datetime').min = minDateTime;
-            
-            // Update registration end when start changes
-            document.getElementById('start_datetime').addEventListener('change', function() {
-                const startTime = this.value;
-                document.getElementById('registration_end').max = startTime;
-            });
-        });
+        
+        const initialLat = latInput.value || 28.7041;
+        const initialLon = lonInput.value || 77.1025;
+        initMap(initialLat, initialLon, latInput.value ? 15 : 5);
     </script>
 </body>
 </html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Event Booking</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .ticket-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #ccc;
+        padding: 15px 0;
+      }
+      .ticket-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .quantity-btn {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      .quantity-display {
+        width: 30px;
+        text-align: center;
+      }
+      .submit-btn {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 4px;
+        margin-top: 20px;
+      }
+      .flash {
+        padding: 10px;
+        margin-bottom: 15px;
+        border-radius: 4px;
+        color: white;
+      }
+      .flash.success {
+        background-color: #28a745;
+      }
+      .flash.warning {
+        background-color: #ffc107;
+      }
+      .flash.danger {
+        background-color: #dc3545;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Book Tickets for {{ event.title }}</h1>
+
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %}
+      <div class="flashes">
+        {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %} {% endwith %}
+
+      <form
+        method="POST"
+        action="{{ url_for('book_event', event_id=event.event_id) }}"
+      >
+        {% for ticket in tickets %}
+        <div class="ticket-item">
+          <div>
+            <h3>{{ ticket.type }}</h3>
+            <p>Price: ₹{{ "%.2f" | format(ticket.price) }}</p>
+          </div>
+          <div class="ticket-controls">
+            <button
+              type="button"
+              class="quantity-btn"
+              onclick="updateQuantity('{{ ticket.ticket_id }}', -1)"
+            >
+              -
+            </button>
+            <div class="quantity-display" id="qty-{{ ticket.ticket_id }}">
+              0
+            </div>
+            <button
+              type="button"
+              class="quantity-btn"
+              onclick="updateQuantity('{{ ticket.ticket_id }}', 1)"
+            >
+              +
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+
+        <input type="hidden" id="quantities-input" name="quantities" />
+
+        <button type="submit" class="submit-btn">Proceed to Payment</button>
+      </form>
+    </div>
+
+    <script>
+      let quantities = {};
+
+      function updateQuantity(ticketId, change) {
+        const currentQty = quantities[ticketId] || 0;
+        const newQty = Math.max(0, currentQty + change);
+
+        // This is where you would check against ticket availability if you had it
+        // For now, let's assume a hardcoded limit for demonstration
+        const maxTicketsPerBooking = 5;
+        const totalTickets =
+          Object.values(quantities).reduce((sum, qty) => sum + qty, 0) + change;
+
+        if (totalTickets > maxTicketsPerBooking) {
+          alert(
+            "You cannot book more than " +
+              maxTicketsPerBooking +
+              " tickets in total."
+          );
+          return;
+        }
+
+        quantities[ticketId] = newQty;
+        document.getElementById(`qty-${ticketId}`).textContent = newQty;
+        updateFormHiddenField();
+      }
+
+      function updateFormHiddenField() {
+        document.getElementById("quantities-input").value =
+          JSON.stringify(quantities);
+      }
+    </script>
+  </body>
+</html>
