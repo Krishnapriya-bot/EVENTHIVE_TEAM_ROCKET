@@ -103,36 +103,51 @@
   <body>
     <div class="verify-container">
       <h2>Verify Your Email</h2>
-      <form action="/verify_otp" method="POST">
-        <div class="otp-container">
-          <input type="text" class="otp-input" maxlength="1" name="otp1" />
-          <input type="text" class="otp-input" maxlength="1" name="otp2" />
-          <input type="text" class="otp-input" maxlength="1" name="otp3" />
-          <input type="text" class="otp-input" maxlength="1" name="otp4" />
-          <input type="text" class="otp-input" maxlength="1" name="otp5" />
-          <input type="text" class="otp-input" maxlength="1" name="otp6" />
-        </div>
-        <button type="submit">Verify</button>
-        <a href="/resend_otp" class="resend-link">Resend OTP</a>
-      </form>
-    </div>
+      <p>An OTP has been sent to <b>{{ email }}</b>. Please enter it below:</p>
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="flash-message" style="color: #ffcc80; margin-bottom: 1rem;">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      <form id="otp-form" action="{{ url_for('verify_otp') }}" method="POST">
+  <div class="otp-container">
+    {% for i in range(1, 7) %}
+      <input type="text" class="otp-input" maxlength="1" name="otp{{ i }}" value="{{ request.form.get('otp' ~ i, '') }}" />
+    {% endfor %}
+  </div>
+  <input type="hidden" name="otp" id="otp-hidden" />
+  <button type="submit">Verify</button>
+  <button type="submit" formaction="{{ url_for('resend_otp') }}" formmethod="post" class="resend-link" style="background:none;border:none;color:#f7bc6a;cursor:pointer;">Resend OTP</button>
+</form>
 
-    <script>
-      const inputs = document.querySelectorAll(".otp-input");
-
-      inputs.forEach((input, index) => {
-        input.addEventListener("input", () => {
-          if (input.value.length === 1 && index < inputs.length - 1) {
-            inputs[index + 1].focus();
-          }
-        });
-
-        input.addEventListener("keydown", (e) => {
-          if (e.key === "Backspace" && !input.value && index > 0) {
-            inputs[index - 1].focus();
-          }
-        });
+<script>
+  const form = document.getElementById('otp-form');
+  form.addEventListener('submit', function(e) {
+    // Only combine OTP for the verify action
+    if (form.getAttribute('action') === "{{ url_for('verify_otp') }}") {
+      let otp = '';
+      document.querySelectorAll('.otp-input').forEach(input => {
+        otp += input.value;
       });
-    </script>
+      document.getElementById('otp-hidden').value = otp;
+    }
+  });
+
+  const inputs = document.querySelectorAll(".otp-input");
+  inputs.forEach((input, index) => {
+    input.addEventListener("input", () => {
+      if (input.value.length === 1 && index < inputs.length - 1) {
+        inputs[index + 1].focus();
+      }
+    });
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Backspace" && !input.value && index > 0) {
+        inputs[index - 1].focus();
+      }
+    });
+  });
+</script>
   </body>
 </html>
