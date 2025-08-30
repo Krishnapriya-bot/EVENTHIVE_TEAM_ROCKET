@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ event.title }} - EventHive</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='screen3.css') }}"
+    />
+  </head>
+  <body>
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">EventHive</div>
+      <div class="user-profile">M</div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+      <!-- Breadcrumbs -->
+
+      <!-- Event Content (restores your old flex layout) -->
+      <div class="event-content">
+        <!-- Main Event Section -->
+        <div class="event-main">
+          <div class="event-header">
+            <div class="event-image">
+              {% if event.image_path %}
+              <img
+                src="{{ event.image_path }}"
+                alt="{{ event.title }}"
+                class="w-100 rounded"
+              />
+              {% else %}
+              <div
+                class="bg-light d-flex justify-content-center align-items-center"
+                style="height: 250px"
+              >
+                <span class="text-muted">No Image Available</span>
+              </div>
+              {% endif %}
+
+              <div class="event-badge">
+                {% if event.get_total_bookings() > 0 %} Registered {% else %}
+                Upcoming {% endif %}
+              </div>
+
+              <div class="event-title">{{ event.title }}</div>
+              <div class="event-tagline">
+                {{ event.description[:100] }}{% if event.description|length >
+                100 %}...{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Event Description -->
+          <div class="event-description">
+            <h3>About This Event</h3>
+            <p>{{ event.description }}</p>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="event-sidebar">
+          <div class="register-section">
+            <a href="{{ url_for('join') }}">Join</a>
+            <div class="event-date">
+              {{ event.start_datetime.strftime('%b %d, %Y') }}
+            </div>
+            <div class="event-time">
+              {{ event.start_datetime.strftime('%I:%M %p') }} - {{
+              event.end_datetime.strftime('%I:%M %p') }}
+            </div>
+            <div class="event-duration">Add to calendar</div>
+          </div>
+
+          <!-- Location Section -->
+          <div class="location-section">
+            <h3><span class="location-icon">📍</span> Location</h3>
+            <div class="location-address">{{ event.location }}</div>
+          </div>
+
+          <!-- Organizer Section -->
+          <div class="organizer-section">
+            <h3>Organizer</h3>
+            <div class="organizer-name">{{ organizer.name }}</div>
+            <div class="organizer-contact">
+              📞 {{ organizer.phone or "N/A" }}
+            </div>
+            <div class="organizer-contact">✉️ {{ organizer.email }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
