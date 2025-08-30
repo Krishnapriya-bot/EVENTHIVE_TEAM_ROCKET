@@ -1,0 +1,36 @@
+body {
+  background-color: black;
+  color: white;
+}
+
+button, .btn {
+  background: linear-gradient(135deg, #f7bc6a, #cb9448, #975E0E);
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 600;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+button:hover, .btn:hover {
+  background: linear-gradient(135deg, #cb9448, #975E0E, #f7bc6a);
+  box-shadow: 0 6px 10px rgba(0,0,0,0.5);
+}
+
+button:focus, .btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(247, 188, 106, 0.7);
+}
+
+/* Optional: Make form inputs background darker for better contrast */
+input, select, textarea {
+  background-color: #222;
+  color: white;
+  border: 1px solid #444;
+}
+input::placeholder, textarea::placeholder {
+  color: #bbb;
+}
