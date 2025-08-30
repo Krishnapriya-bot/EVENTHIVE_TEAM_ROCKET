@@ -1,291 +1,181 @@
-
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family:'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(135deg, #000000 0%, #000000 35%, #0f3460 100%);
-    color: white;
-    overflow-x: hidden;
-    min-height: 100vh;
-}
-
-/* Header */
-.header {
-    position: fixed;
-    top: 0;
-    width: 100%;
-    padding: 20px 50px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    backdrop-filter: blur(10px);
-    z-index: 1000;
-}
-
-.logo {
-    font-size: 32px;
-    font-weight: 300;
-    color: #ffffff;
-}
-
-
-.nav-links {
-    display: flex;
-    gap: 30px;
-    align-items: center;
-}
-
-.nav-links a {
-    color: rgba(255, 255, 255, 0.8);
-    text-decoration: none;
-    font-weight: 400;
-    transition: color 0.3s ease;
-}
-
-.nav-links a:hover {
-    color: #ff6b9d;
-}
-
-.sign-in-btn {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    color: white !important;
-    transition: all 0.3s ease;
-}
-
-.sign-in-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: #ff6b9d;
-}
-
-/* Main Content */
-.main-container {
-    display: flex;
-    min-height: 100vh;
-    align-items: center;
-    padding: 100px 50px 50px;
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
-.content-section {
-    flex: 1;
-    max-width: 550px;
-}
-
-.main-title {
-    font-size: 72px;
-    font-weight: 700;
-    line-height: 1.1;
-    margin-bottom: 30px;
-}
-
-.title-gradient {
-    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 50%, #ff6b9d 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.subtitle {
-    font-size: 20px;
-    line-height: 1.6;
-    color: rgba(255, 255, 255, 0.8);
-    margin-bottom: 40px;
-    font-weight: 300;
-}
-
-a {
-    background: linear-gradient(135deg, #ff6b9d, #4facfe);
-    color: white;
-    padding: 16px 32px;
-    border: none;
-    border-radius: 12px;
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 8px 32px rgba(255, 107, 157, 0.3);
-    position: relative;
-    overflow: hidden;
-    text-decoration: none;
-}
-
-.cta-button::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
-}
-
-.cta-button:hover::before {
-    left: 100%;
-}
-
-.cta-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 40px rgba(255, 107, 157, 0.4);
-}
-
-/* 3D Visual Section */
-.visual-section {
-    flex: 1;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 600px;
-}
-
-/* 3D Event Platform Visualization */
-.event-platform-3d {
-    position: relative;
-    width: 500px;
-    height: 500px;
-    perspective: 1000px;
-}
-
-.platform-container {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    transform-style: preserve-3d;
-    animation: rotate360 20s linear infinite;
-    margin-top: 10rem;
-}
-
-.event-card {
-    position: absolute;
-    width: 200px;
-    height: 120px;
-    background: linear-gradient(135deg, #ff6b9d, #4facfe);
-    border-radius: 16px;
-    padding: 16px;
-    box-shadow: 0 8px 32px rgba(255, 107, 157, 0.3);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    font-size: 12px;
-}
-
-.event-card h3 {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 4px;
-}
-
-.event-card p {
-    font-size: 10px;
-    opacity: 0.9;
-}
-
-/* Position cards in 3D space */
-.card-1 {
-    transform: rotateY(0deg) translateZ(200px);
-    animation-delay: -1s;
-}
-
-.card-2 {
-    transform: rotateY(60deg) translateZ(200px);
-    animation-delay: -2s;
-    background: linear-gradient(135deg, #4facfe, #00f2fe);
-}
-
-.card-3 {
-    transform: rotateY(120deg) translateZ(200px);
-    animation-delay: -3s;
-    background: linear-gradient(135deg, #ff6b9d, #ffa726);
-}
-
-.card-4 {
-    transform: rotateY(180deg) translateZ(200px);
-    animation-delay: -4s;
-    background: linear-gradient(135deg, #00f2fe, #4facfe);
-}
-
-.card-5 {
-    transform: rotateY(240deg) translateZ(200px);
-    animation-delay: -5s;
-    background: linear-gradient(135deg, #ffa726, #ff6b9d);
-}
-
-.card-6 {
-    transform: rotateY(300deg) translateZ(200px);
-    animation-delay: -6s;
-    background: linear-gradient(135deg, #4facfe, #ff6b9d);
-}
-
-
-/* Animations */
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-
-@keyframes rotate360 {
-    from { transform: rotateY(0deg); }
-    to { transform: rotateY(360deg); }
-}
-
-@keyframes pulse {
-    0%, 100% { 
-        transform: translate(-50%, -50%) scale(1);
-        box-shadow: 0 0 50px rgba(255, 107, 157, 0.5);
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-    50% { 
-        transform: translate(-50%, -50%) scale(1.1);
-        box-shadow: 0 0 70px rgba(255, 107, 157, 0.8);
-    }
-}
 
-/* Responsive */
-@media (max-width: 1024px) {
-    .main-container {
-        flex-direction: column;
-        text-align: center;
-        padding: 120px 30px 50px;
+    body {
+      font-family: 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #000 0%, #000 35%, #351f00 100%);
+      color: white;
+      overflow: hidden;
     }
-    
-    .main-title {
-        font-size: 56px;
-    }
-    
-    .visual-section {
-        height: 400px;
-    }
-    
-    .event-platform-3d {
-        width: 350px;
-        height: 350px;
-    }
-}
 
-@media (max-width: 768px) {
+    /* Header */
     .header {
-        padding: 15px 20px;
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 20px 50px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 1000;
     }
-    
+
+    .logo {
+      font-size: 28px;
+      font-weight: 300;
+    }
+
     .nav-links {
-        gap: 15px;
+      display: flex;
+      gap: 20px;
+      align-items: center;
     }
-    
+
+    .nav-links a {
+      color: rgba(255, 255, 255, 0.8);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .nav-links a:hover {
+      color: #975E0E;
+    }
+
+    .sign-in-btn {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white !important;
+      transition: all 0.3s ease;
+    }
+
+    .sign-in-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: #975E0E;
+    }
+
+    /* Main */
+    .main-container {
+      display: flex;
+      min-height: 100vh;
+      align-items: center;
+      padding: 100px 50px 50px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .content-section {
+      flex: 1;
+      max-width: 550px;
+    }
+
     .main-title {
-        font-size: 42px;
+      font-size: 64px;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 30px;
     }
-    
+
+    .title-gradient {
+      background: linear-gradient(135deg, #f7bc6a, #cb9448, #975E0E);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
     .subtitle {
-        font-size: 18px;
+      font-size: 18px;
+      line-height: 1.6;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 40px;
+      font-weight: 300;
     }
-}
+
+    /* Button */
+    .cta-button {
+      background: linear-gradient(135deg, #f7bc6a, #cb9448, #975E0E);
+      color: white;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px rgba(255, 107, 157, 0.3);
+      position: relative;
+      overflow: hidden;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(255, 107, 157, 0.4);
+    }
+
+    /* 3D Visual */
+    .visual-section {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 500px;
+    }
+
+    .event-platform-3d {
+      width: 380px;
+      height: 380px;
+      perspective: 1000px;
+    }
+
+    .platform-container {
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transform: rotateX(135deg);
+      animation: rotate360 20s linear infinite;
+    }
+
+    .event-card {
+      position: relative;
+      width: 180px;
+      height: 100px;
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 12px;
+      background: linear-gradient(135deg, #ff6b9d, #4facfe);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      text-align: left;
+    }
+
+    .event-card h3 {
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    /* 3D positions */
+    .card-1 { transform: rotateY(0deg) translateZ(200px); }
+    .card-2 { transform: rotateY(60deg) translateZ(200px); background: linear-gradient(135deg, #4facfe, #00f2fe); }
+    .card-3 { transform: rotateY(120deg) translateZ(200px); background: linear-gradient(135deg, #ff6b9d, #ffa726); }
+    .card-4 { transform: rotateY(180deg) translateZ(200px); background: linear-gradient(135deg, #00f2fe, #4facfe); }
+    .card-5 { transform: rotateY(240deg) translateZ(200px); background: linear-gradient(135deg, #ffa726, #ff6b9d); }
+    .card-6 { transform: rotateY(300deg) translateZ(200px); background: linear-gradient(135deg, #4facfe, #ff6b9d); }
+
+    /* Animation */
+    @keyframes rotate360 {
+      from { transform: rotateX(135deg) rotateY(0deg); }
+      to { transform: rotateX(135deg) rotateY(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .main-container { flex-direction: column; text-align: center; }
+      .main-title { font-size: 48px; }
+      .visual-section { height: 400px; }
+      .event-platform-3d { width: 320px; height: 320px; }
+    }
