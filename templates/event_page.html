@@ -4,38 +4,39 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ event.title }} - EventHive</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='screen3.css') }}"
     />
-    <style>
-      .event-image img {
-        max-width: 100%;
-        max-height: 180px;
-        object-fit: cover;
-        display: block;
-        margin: 0 auto;
-      }
-    </style>
   </head>
   <body>
     <!-- Header -->
-    <div class="header">
-      <div class="logo">EventHive</div>
-      <div class="user-profile">M</div>
-    </div>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-content">
+                <div class="nav-left">
+                    <h1 class="logo">EventHive</h1>
+                </div>
+                <div class="nav-right">
+                    <span class="welcome-text">Welcome, {{ name }}!</span>
+                    <a href="{{ url_for('logout') }}" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <!-- Main Container -->
     <div class="main-container">
-      <!-- Breadcrumbs -->
-
-      <!-- Event Content (restores your old flex layout) -->
+      <!-- Event Content -->
       <div class="event-content">
         <!-- Main Event Section -->
         <div class="event-main">
           <div class="event-header">
             <div class="event-image">
-              {% if event.image_url %}
+             {% if event.image_url %}
               <img
                 src="{{ event.image_url }}"
                 alt="{{ event.title }}"
@@ -109,14 +110,39 @@
             </div>
             <div class="organizer-contact">✉️ {{ organizer.email }}</div>
           </div>
+
+          <!-- Share Section -->
+          <div class="share-section">
+            <h3>Share Event</h3>
+            <div class="share-text">
+              Tell your friends about this event
+            </div>
+            <div class="social-buttons">
+              <button class="social-btn facebook" onclick="shareOn('facebook')" title="Share on Facebook">
+                <i class="fab fa-facebook-f"></i>
+              </button>
+              <button class="social-btn twitter" onclick="shareOn('twitter')" title="Share on Twitter">
+                <span>X</span>
+              </button>
+              <button class="social-btn linkedin" onclick="shareOn('linkedin')" title="Share on LinkedIn">
+                <i class="fab fa-linkedin-in"></i>
+              </button>
+              <button class="social-btn whatsapp" onclick="shareOn('whatsapp')" title="Share on WhatsApp">
+                <i class="fab fa-whatsapp"></i>
+              </button>
+              <button class="social-btn sms" onclick="shareOn('sms')" title="Share via SMS">
+                <i class="fas fa-sms"></i>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <div id="successMessage" class="success-message"></div>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <script>
       const mapDiv = document.getElementById("map");
       const lat = parseFloat(mapDiv.getAttribute("data-lat"));
@@ -130,6 +156,87 @@
         .addTo(map)
         .bindPopup(mapDiv.previousElementSibling.textContent.trim())
         .openPopup();
+    </script>
+
+    <script>
+        // Event data - Update with your actual event details
+        const eventData = {
+            title: "{{ event.title }}",
+            description: "{{ event.description[:100] }}{% if event.description|length > 100 %}...{% endif %}",
+            url: window.location.href,
+            location: "{{ event.location }}"
+        };
+
+        // Show success message
+        function showMessage(message) {
+            let messageDiv = document.getElementById('successMessage');
+            if (!messageDiv) {
+                messageDiv = document.createElement('div');
+                messageDiv.id = 'successMessage';
+                messageDiv.className = 'success-message';
+                document.body.appendChild(messageDiv);
+            }
+            messageDiv.textContent = message;
+            messageDiv.style.display = 'block';
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        // Create share message
+        function createShareMessage() {
+            return `🎉 ${eventData.title}\n\n${eventData.description}\n\n📍 ${eventData.location}\n\n🔗 ${eventData.url}`;
+        }
+
+        // Share function
+        function shareOn(platform) {
+            const message = createShareMessage();
+            const url = eventData.url;
+            const title = eventData.title;
+            
+            let shareUrl = '';
+            
+            switch(platform) {
+                case 'facebook':
+                    shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+                    break;
+                    
+                case 'twitter':
+                    let twitterMessage = message;
+                    if (twitterMessage.length > 280) {
+                        twitterMessage = twitterMessage.substring(0, 277) + '...';
+                    }
+                    shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterMessage)}`;
+                    break;
+                    
+                case 'linkedin':
+                    shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
+                    break;
+                    
+                case 'whatsapp':
+                    shareUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+                    break;
+                    
+                case 'sms':
+                    shareUrl = `sms:?body=${encodeURIComponent(message)}`;
+                    break;
+            }
+            
+            if (shareUrl) {
+                if (platform === 'sms') {
+                    window.location.href = shareUrl;
+                } else {
+                    window.open(shareUrl, '_blank', 'width=600,height=400');
+                }
+                showMessage(`Opening ${platform}...`);
+                trackShare(platform);
+            }
+        }
+
+        // Track sharing (optional)
+        function trackShare(platform) {
+            console.log(`Shared on: ${platform}`);
+        }
     </script>
   </body>
 </html>

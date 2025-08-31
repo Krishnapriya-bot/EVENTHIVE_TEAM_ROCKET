@@ -4,153 +4,179 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Event Booking</title>
+
+    <!-- Font Awesome for icon -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
     <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
       body {
-        font-family: Arial, sans-serif;
-        background-color: #f4f4f4;
-        color: #333;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+        background: linear-gradient(135deg, #000 0%, #000 35%, #351f00 100%);
+        color: #fff;
+        min-height: 100vh;
         padding: 20px;
       }
+
       .container {
-        max-width: 600px;
+        max-width: 700px;
         margin: auto;
-        background: white;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        background: rgba(42, 42, 42, 0.95);
+        padding: 40px;
+        border-radius: 16px;
+        box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        border: 1px solid rgba(64,64,64,0.8);
       }
-      .ticket-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #ccc;
-        padding: 15px 0;
-      }
-      .ticket-controls {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .quantity-btn {
-        background-color: #007bff;
-        color: white;
-        border: none;
-        padding: 8px 12px;
-        cursor: pointer;
-        border-radius: 4px;
-      }
-      .quantity-display {
-        width: 30px;
+
+      h1 {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 30px;
         text-align: center;
+        background: linear-gradient(135deg, #f7bc6a, #cb9448, #975E0E);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
       }
-      .submit-btn {
-        background-color: #28a745;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        cursor: pointer;
-        border-radius: 4px;
-        margin-top: 20px;
-      }
-      .flash {
-        padding: 10px;
-        margin-bottom: 15px;
-        border-radius: 4px;
-        color: white;
-      }
-      .flash.success {
-        background-color: #28a745;
-      }
-      .flash.warning {
-        background-color: #ffc107;
-      }
-      .flash.danger {
-        background-color: #dc3545;
-      }
+
+      .flashes { margin-bottom: 20px; }
+      .flash { padding: 15px 20px; margin-bottom: 10px; border-radius: 8px; font-weight: 500; border-left: 4px solid; animation: slideIn 0.3s ease; }
+      @keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      .flash.success { background: linear-gradient(135deg, #28a745, #20c997); border-left-color: #28a745; }
+      .flash.warning { background: linear-gradient(135deg, #ffc107, #fd7e14); border-left-color: #ffc107; color: #000; }
+      .flash.danger { background: linear-gradient(135deg, #dc3545, #e74c3c); border-left-color: #dc3545; }
+
+      .ticket-item { display: flex; justify-content: space-between; align-items: center; padding: 25px; margin-bottom: 15px; background: rgba(26,26,26,0.6); border-radius: 12px; border: 1px solid rgba(247,188,106,0.2); }
+      .ticket-item:hover { background: rgba(247,188,106,0.1); border-color: rgba(247,188,106,0.4); }
+      .ticket-info h3 { color: #f7bc6a; font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+      .ticket-info p { color: #ccc; font-size: 16px; font-weight: 500; }
+      .price-value { color: #f7bc6a; font-weight: 700; font-size: 18px; }
+
+      .ticket-controls { display: flex; align-items: center; gap: 15px; background: rgba(26,26,26,0.8); padding: 12px 20px; border-radius: 50px; border: 1px solid rgba(247,188,106,0.3); }
+      .quantity-btn { background: linear-gradient(135deg, #f7bc6a, #cb9448, #975E0E); color: white; border: none; padding: 10px 16px; cursor: pointer; border-radius: 50%; font-size: 18px; font-weight: bold; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+      .quantity-btn:hover { transform: scale(1.1); }
+      .quantity-btn:active { transform: scale(0.95); }
+
+      .quantity-display { width: 50px; text-align: center; font-size: 18px; font-weight: 700; color: #f7bc6a; background: rgba(247,188,106,0.1); padding: 8px; border-radius: 8px; border: 1px solid rgba(247,188,106,0.3); }
+
+      .submit-btn { background: linear-gradient(135deg, #f7bc6a, #cb9448, #975E0E); color: white; border: none; padding: 15px 40px; cursor: pointer; border-radius: 12px; margin-top: 30px; width: 100%; font-size: 16px; font-weight: 700; text-transform: uppercase; transition: all 0.3s ease; }
+      .submit-btn:hover { transform: translateY(-2px); }
+      .submit-btn:active { transform: translateY(0); }
+
+      .total-section { margin-top: 30px; padding: 20px; background: rgba(26,26,26,0.8); border-radius: 12px; border: 1px solid rgba(247,188,106,0.3); text-align: center; display: none; }
+      .total-label { color: #ccc; font-size: 14px; text-transform: uppercase; margin-bottom: 8px; }
+      .total-amount { color: #f7bc6a; font-size: 24px; font-weight: 800; }
+
+      @media (max-width: 768px) { .ticket-item { flex-direction: column; text-align: center; } .ticket-controls { width: 100%; justify-content: center; } }
     </style>
   </head>
   <body>
     <div class="container">
       <h1>Book Tickets for {{ event.title }}</h1>
 
-      {% with messages = get_flashed_messages(with_categories=true) %} {% if
-      messages %}
-      <div class="flashes">
-        {% for category, message in messages %}
-        <div class="flash {{ category }}">{{ message }}</div>
-        {% endfor %}
-      </div>
-      {% endif %} {% endwith %}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flashes">
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
 
-      <form
-        method="POST"
-        action="{{ url_for('book_event', event_id=event.event_id) }}"
-      >
+      <form method="POST" action="{{ url_for('book_event', event_id=event.event_id) }}">
         {% for ticket in tickets %}
-        <div class="ticket-item">
-          <div>
-            <h3>{{ ticket.type }}</h3>
-            <p>Price: ₹{{ "%.2f" | format(ticket.price) }}</p>
-          </div>
-          <div class="ticket-controls">
-            <button
-              type="button"
-              class="quantity-btn"
-              onclick="updateQuantity('{{ ticket.ticket_id }}', -1)"
-            >
-              -
-            </button>
-            <div class="quantity-display" id="qty-{{ ticket.ticket_id }}">
-              0
+          <div class="ticket-item"
+               data-ticket-id="{{ ticket.ticket_id }}"
+               data-ticket-price="{{ ticket.price }}">
+            <div class="ticket-info">
+              <h3>{{ ticket.type }}</h3>
+              <p>Price: <span class="price-value">₹{{ "%.2f"|format(ticket.price) }}</span></p>
             </div>
-            <button
-              type="button"
-              class="quantity-btn"
-              onclick="updateQuantity('{{ ticket.ticket_id }}', 1)"
-            >
-              +
-            </button>
+
+            <div class="ticket-controls">
+              <button type="button" class="quantity-btn btn-decrease">−</button>
+              <div class="quantity-display">0</div>
+              <button type="button" class="quantity-btn btn-increase">+</button>
+            </div>
           </div>
-        </div>
         {% endfor %}
 
-        <input type="hidden" id="quantities-input" name="quantities" />
+        <div class="total-section" id="total-section">
+          <div class="total-label">Total Amount</div>
+          <div class="total-amount" id="total-amount">₹0.00</div>
+        </div>
 
-        <button type="submit" class="submit-btn">Proceed to Payment</button>
+        <input type="hidden" id="quantities-input" name="quantities" value="{}" />
+
+        <button type="submit" class="submit-btn">
+          <i class="fas fa-credit-card"></i> Proceed to Payment
+        </button>
       </form>
     </div>
 
     <script>
-      let quantities = {};
+      document.addEventListener("DOMContentLoaded", () => {
+        const ticketItems = document.querySelectorAll(".ticket-item");
+        const totalSection = document.getElementById("total-section");
+        const totalAmountEl = document.getElementById("total-amount");
+        const quantitiesInput = document.getElementById("quantities-input");
+        const maxTickets = 10;
 
-      function updateQuantity(ticketId, change) {
-        const currentQty = quantities[ticketId] || 0;
-        const newQty = Math.max(0, currentQty + change);
+        const quantities = {};
 
-        // This is where you would check against ticket availability if you had it
-        // For now, let's assume a hardcoded limit for demonstration
-        const maxTicketsPerBooking = 5;
-        const totalTickets =
-          Object.values(quantities).reduce((sum, qty) => sum + qty, 0) + change;
+        ticketItems.forEach(item => {
+          const ticketId = item.dataset.ticketId;
+          const price = parseFloat(item.dataset.ticketPrice);
+          quantities[ticketId] = 0;
 
-        if (totalTickets > maxTicketsPerBooking) {
-          alert(
-            "You cannot book more than " +
-              maxTicketsPerBooking +
-              " tickets in total."
-          );
-          return;
+          const display = item.querySelector(".quantity-display");
+          const btnIncrease = item.querySelector(".btn-increase");
+          const btnDecrease = item.querySelector(".btn-decrease");
+
+          btnIncrease.addEventListener("click", () => updateQuantity(ticketId, price, 1, display));
+          btnDecrease.addEventListener("click", () => updateQuantity(ticketId, price, -1, display));
+        });
+
+        function updateQuantity(ticketId, price, change, display) {
+          const currentQty = quantities[ticketId];
+          const newQty = Math.max(0, currentQty + change);
+
+          const totalSelected = Object.values(quantities).reduce((a, b) => a + b, 0) - currentQty + newQty;
+          if (totalSelected > maxTickets) {
+            alert("You cannot book more than " + maxTickets + " tickets in total.");
+            return;
+          }
+
+          quantities[ticketId] = newQty;
+          display.textContent = newQty;
+          updateTotal();
         }
 
-        quantities[ticketId] = newQty;
-        document.getElementById(`qty-${ticketId}`).textContent = newQty;
-        updateFormHiddenField();
-      }
-
-      function updateFormHiddenField() {
-        document.getElementById("quantities-input").value =
-          JSON.stringify(quantities);
-      }
+        function updateTotal() {
+          let total = 0;
+          for (const item of ticketItems) {
+            const id = item.dataset.ticketId;
+            const price = parseFloat(item.dataset.ticketPrice);
+            total += quantities[id] * price;
+          }
+          if (total > 0) {
+            totalSection.style.display = "block";
+            totalAmountEl.textContent = "₹" + total.toFixed(2);
+          } else {
+            totalSection.style.display = "none";
+          }
+          const filtered = {};
+          for (const [id, qty] of Object.entries(quantities)) {
+            if (qty > 0) filtered[id] = qty;
+          }
+          quantitiesInput.value = JSON.stringify(filtered);
+        }
+      });
     </script>
   </body>
 </html>

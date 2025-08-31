@@ -19,7 +19,7 @@
     </style>
   </head>
   <body>
-    <!-- Header -->
+    <!-- Header 
     <header class="header">
       <div class="logo">EventHive</div>
       <div class="header-right">
@@ -29,7 +29,22 @@
           <div class="profile-avatar">JD</div>
         </div>
       </div>
-    </header>
+    </header>-->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-content">
+                <div class="nav-left">
+                    <h1 class="logo">EventHive</h1>
+                </div>
+                <div class="nav-right">
+                    <span class="welcome-text">Welcome, {{ name }}!</span>
+                    <a href="{{ url_for('logout') }}" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
     <!-- Main Content -->
     <main class="main-container">
       <h1 class="page-title">Attendee Home page</h1>

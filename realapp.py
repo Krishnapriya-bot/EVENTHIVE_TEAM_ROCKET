@@ -385,7 +385,8 @@ def event_page(event_id):
         event=event,
         organizer=organizer,
         lat=lat,
-        lon=lon
+        lon=lon,
+        name=current_user.name
     )
     
 @app.route("/join/<int:event_id>")
