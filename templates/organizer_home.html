@@ -142,9 +142,8 @@
                 <div class="event-card">
                     <!-- Event Image -->
                     <div class="event-image">
-                        {% if event.image_path %}
-                            <img src="{{ url_for('static', filename=event.image_path) }}" 
-                                 alt="{{ event.title }}">
+                        {% if event.image_url %}
+                                    <img src="{{ event.image_url }}" alt="Event image">
                         {% else %}
                             <div class="no-image">
                                 <i class="fas fa-image"></i>
@@ -222,7 +221,7 @@
                                 </a>
                             {% endif %}
                             
-                            <a href="#" 
+                            <a href="{{ url_for('toggle_event_status', event_id=event.event_id) }}" 
                                class="action-btn {{ 'warning' if event.status == 'published' else 'primary' }}">
                                 <i class="fas fa-{{ 'eye-slash' if event.status == 'published' else 'eye' }}"></i>
                                 {{ 'Unpublish' if event.status == 'published' else 'Publish' }}
@@ -231,10 +230,7 @@
                         
                         <!-- Management Links -->
                         <div class="management-links">
-                            <a href="#" class="link">
-                                <i class="fas fa-ticket-alt"></i>Manage Tickets
-                            </a>
-                            <a href="#" class="link">
+                            <a href="{{ url_for('attendees', event_id=event.event_id) }}" class="link">
                                 <i class="fas fa-users"></i>Attendees
                             </a>
                             <button onclick="" class="link delete-link">

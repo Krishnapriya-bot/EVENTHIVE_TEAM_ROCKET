@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Event Locations Map - EventHive</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <style>
+      #map {
+        height: 500px;
+        width: 100%;
+        margin: 30px auto;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <h2 style="text-align: center">All Event Locations</h2>
+    <div id="map" data-markers="{{ event_markers|tojson | safe }}"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      // Make sure the DOM is fully loaded before running the script
+      document.addEventListener("DOMContentLoaded", function () {
+        const mapDiv = document.getElementById("map");
+
+        // The data-markers attribute is used to pass data from Flask to JavaScript
+        const eventMarkers = JSON.parse(mapDiv.getAttribute("data-markers"));
+
+        // Initialize the map, setting the initial view to a central location for India
+        const map = L.map("map").setView([28.6139, 77.209], 5);
+
+        // Add the OpenStreetMap tile layer
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "© OpenStreetMap contributors",
+        }).addTo(map);
+
+        // Loop through the markers data and add them to the map
+        eventMarkers.forEach((ev) => {
+          const marker = L.marker([ev.lat, ev.lon]).addTo(map);
+
+          // Add a tooltip to each marker to display event info
+          marker.bindTooltip(
+            `<strong>${ev.title}</strong><br>${ev.lat.toFixed(
+              4
+            )}, ${ev.lon.toFixed(4)}`,
+            { direction: "top", offset: [0, -10] }
+          );
+
+          // Add a click event to redirect to the event's page
+          marker.on("click", function () {
+            window.location.href = ev.url;
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

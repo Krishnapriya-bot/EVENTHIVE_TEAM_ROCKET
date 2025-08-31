@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_mail import Mail, Message
 import qrcode
+import time
 from base64 import b64encode
 from io import BytesIO
 import socket
@@ -20,6 +21,18 @@ import uuid
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+from geopy.geocoders import Nominatim
+
+geolocator = Nominatim(user_agent="eventhive_app")
+
+CACHE_FILE = 'locations_cache.json'
+locations_cache = {}
+
+try:
+    with open(CACHE_FILE, 'r') as f:
+        locations_cache = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    locations_cache = {}
 
 # APP CONFIG
 app = Flask(__name__)
@@ -295,6 +308,18 @@ def resend_otp():
 
     return redirect(url_for('verify_otp'))
 
+@app.route('/toggle_event_status/<int:event_id>')
+@login_required
+def toggle_event_status(event_id):
+    event = Event.query.get_or_404(event_id)
+    if event.organizer_id != current_user.user_id:
+        flash("Access denied!")
+        return redirect(url_for('organizer_home'))
+    event.status = "draft" if event.status == "published" else "published"
+    db.session.commit()
+    flash(f"Event '{event.title}' status updated to {event.status}.")
+    return redirect(url_for('organizer_home'))
+
 # -------- LOGIN --------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -350,10 +375,17 @@ def eventhive():
 def event_page(event_id):
     event = Event.query.get_or_404(event_id)
     organizer = User.query.get(event.organizer_id)
+    geolocator = Nominatim(user_agent="eventhive_app")
+    location = geolocator.geocode(event.location)
+    lat, lon = None, None
+    if location:
+        lat, lon = location.latitude, location.longitude
     return render_template(
         "event_page.html",
         event=event,
-        organizer=organizer
+        organizer=organizer,
+        lat=lat,
+        lon=lon
     )
     
 @app.route("/join/<int:event_id>")
@@ -415,16 +447,21 @@ def create_event(event_id=None):
     if current_user.role != "organizer":
         flash("Access denied. Only organizers can create events.")
         return redirect(url_for('eventhive'))
+    
+    now = datetime.now()
 
     categories = ["Music Show", "Comedy Show", "Workshop", "Sports", "Play", "Conference", "Adventure", "Performance", "Other"]
     event = None
-    
+    location_details = {}  # Initialize an empty dictionary for lat/lon
+
     if event_id:
         event = Event.query.get_or_404(event_id)
         if event.organizer_id != current_user.user_id:
             flash("Access denied. You cannot edit this event.")
             return redirect(url_for('organizer_home'))
-
+        # Note: Since we are not storing lat/lon, this will not be populated
+        # if the event was created after this change.
+    
     if request.method == 'POST':
         try:
             # Basic event info
@@ -433,26 +470,44 @@ def create_event(event_id=None):
             location = request.form.get('location', '').strip()
             category = request.form.get('category', '')
             
+            # Use geopy to get latitude and longitude
+            try:
+                location_data = geolocator.geocode(location)
+                if location_data:
+                    location_details['latitude'] = location_data.latitude
+                    location_details['longitude'] = location_data.longitude
+                else:
+                    flash("Could not find the coordinates for the specified location. Please try a different name.")
+                    return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
+            except Exception as e:
+                flash(f"An error occurred while geocoding the location: {str(e)}")
+                return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
+            
             # Validate required fields
             if not title or not location or not category:
                 flash("Please fill all required fields.")
-                return render_template('create_event.html', event=event, categories=categories)
-            
+                return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
+
             # Parse datetime fields
             start_datetime_str = request.form.get('start_datetime', '')
             end_datetime_str = request.form.get('end_datetime', '')
             
             if not start_datetime_str or not end_datetime_str:
                 flash("Please provide both start and end date/time.")
-                return render_template('create_event.html', event=event, categories=categories)
-                
+                return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
+
             start_dt = datetime.strptime(start_datetime_str, '%Y-%m-%dT%H:%M')
             end_dt = datetime.strptime(end_datetime_str, '%Y-%m-%dT%H:%M')
+            
+            # NEW SERVER-SIDE VALIDATION: CHECK IF DATE HAS PASSED
+            if start_dt < datetime.now():
+                flash("The event's start date cannot be in the past.")
+                return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
             
             # Validate datetime logic
             if end_dt <= start_dt:
                 flash("End time must be after start time.")
-                return render_template('create_event.html', event=event, categories=categories)
+                return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
             
             # Registration period (optional)
             reg_start = None
@@ -461,15 +516,20 @@ def create_event(event_id=None):
                 reg_start = datetime.strptime(request.form['registration_start'], '%Y-%m-%dT%H:%M')
             if request.form.get('registration_end'):
                 reg_end = datetime.strptime(request.form['registration_end'], '%Y-%m-%dT%H:%M')
-                
+
+            # NEW SERVER-SIDE VALIDATION: CHECK REGISTRATION DATE
+            if reg_start and reg_start < datetime.now():
+                flash("The registration start date cannot be in the past.")
+                return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
+            
             # Validate registration period
             if reg_start and reg_end:
                 if reg_end <= reg_start:
                     flash("Registration end time must be after registration start time.")
-                    return render_template('create_event.html', event=event, categories=categories)
+                    return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
                 if reg_end > start_dt:
                     flash("Registration must end before the event starts.")
-                    return render_template('create_event.html', event=event, categories=categories)
+                    return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
             
             # Max attendees (optional)
             max_attendees = None
@@ -478,11 +538,11 @@ def create_event(event_id=None):
                     max_attendees = int(request.form['max_attendees'])
                     if max_attendees <= 0:
                         flash("Maximum attendees must be a positive number.")
-                        return render_template('create_event.html', event=event, categories=categories)
+                        return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
                 except ValueError:
                     flash("Invalid maximum attendees value.")
-                    return render_template('create_event.html', event=event, categories=categories)
-                
+                    return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
+                    
             # Status
             status = "published" if 'publish' in request.form else "draft"
 
@@ -497,7 +557,7 @@ def create_event(event_id=None):
                         image_url = upload_result['secure_url']
                     except Exception as e:
                         flash(f"Error uploading image: {e}")
-                        return render_template('create_event.html', event=event, categories=categories)
+                        return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
 
             if event:  # Update existing event
                 event.title = title
@@ -540,7 +600,7 @@ def create_event(event_id=None):
                 # Validate ticket data
                 if len(ticket_types) != len(ticket_prices) or len(ticket_prices) != len(ticket_quantities):
                     flash("Ticket data mismatch. Please check your ticket information.")
-                    return render_template('create_event.html', event=event, categories=categories)
+                    return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
                 
                 for i, ticket_type in enumerate(ticket_types):
                     if ticket_type and ticket_prices[i] and ticket_quantities[i]:
@@ -550,10 +610,10 @@ def create_event(event_id=None):
                             
                             if price < 0:
                                 flash("Ticket price cannot be negative.")
-                                return render_template('create_event.html', event=event, categories=categories)
+                                return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
                             if quantity <= 0:
                                 flash("Ticket quantity must be positive.")
-                                return render_template('create_event.html', event=event, categories=categories)
+                                return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
                                 
                             new_ticket = Ticket(
                                 event_id=event.event_id,
@@ -564,7 +624,7 @@ def create_event(event_id=None):
                             db.session.add(new_ticket)
                         except (ValueError, TypeError):
                             flash(f"Invalid ticket data for {ticket_type}.")
-                            return render_template('create_event.html', event=event, categories=categories)
+                            return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
                             
             db.session.commit()
             flash(f"Event '{title}' saved successfully!")
@@ -573,10 +633,53 @@ def create_event(event_id=None):
         except Exception as e:
             db.session.rollback()
             flash(f"An error occurred: {str(e)}")
-            return render_template('create_event.html', event=event, categories=categories)
+            return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
 
-    return render_template('create_event.html', event=event, categories=categories)
+    return render_template('create_event.html', event=event, categories=categories, location_details=location_details, now=now)
 
+@app.route('/attendees/<int:event_id>')
+@login_required
+def attendees(event_id):
+    event = Event.query.get_or_404(event_id)
+    if event.organizer_id != current_user.user_id:
+        flash("Access denied!")
+        return redirect(url_for('organizer_home'))
+
+    # Filters
+    gender_filter = request.args.get('gender', None)
+    attended_filter = request.args.get('attended', None)
+
+    query = Booking.query.filter_by(event_id=event_id).join(User)
+    if gender_filter:
+        query = query.filter(User.role==gender_filter)
+    if attended_filter:
+        if attended_filter.lower() == "attended":
+            query = query.join(BookingTicket).filter(BookingTicket.check_in_status=="attended")
+        elif attended_filter.lower() == "not attended":
+            query = query.join(BookingTicket).filter(BookingTicket.check_in_status!="attended")
+
+    bookings = query.all()
+    return render_template('attendees.html', bookings=bookings, event=event)
+
+@app.route('/get_location_coords', methods=['POST'])
+def get_location_coords():
+    location_name = request.json.get('location')
+    if not location_name:
+        return jsonify({'error': 'Location not provided'}), 400
+
+    try:
+        location_data = geolocator.geocode(location_name)
+        if location_data:
+            return jsonify({
+                'latitude': location_data.latitude,
+                'longitude': location_data.longitude
+            })
+        else:
+            return jsonify({'error': 'Location not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+    
 @app.route('/manage_tickets/<int:event_id>', methods=['GET', 'POST'])
 @login_required
 def manage_tickets(event_id):
@@ -811,6 +914,18 @@ def checkout():
             
             db.session.commit()
 
+            # Notify organizer by email
+            try:
+                organizer = User.query.get(event.organizer_id)
+                msg = Message(
+                    subject=f"New Registration for {event.title}",
+                    recipients=[organizer.email],
+                    body=f"{current_user.name} has joined your event '{event.title}'."
+                )
+                mail.send(msg)
+            except Exception as e:
+                print(f"Failed to send organizer notification: {e}")
+
             # Generate the PDF with tickets
             html_content = render_template(
                 'tickets_pdf.html',
@@ -1021,7 +1136,62 @@ def scanner():
 </html>
     """)
 
-    
+# Example Flask route
+@app.route('/events_map')
+@login_required
+def events_map():
+    locations_cache = {}
+    event_markers = []
+    cache_updated = False
+
+    # 1. Load the cache at the start of the request
+    try:
+        if os.path.exists(CACHE_FILE):
+            with open(CACHE_FILE, 'r') as f:
+                locations_cache = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        locations_cache = {}
+
+    try:
+        events = Event.query.all()
+        for event in events:
+            location_name = event.location
+
+            if location_name in locations_cache:
+                location_data = locations_cache[location_name]
+                # CORRECTED: Use "lat" and "lon" from the JSON file
+                location = {'latitude': location_data['lat'], 'longitude': location_data['lon']}
+            else:
+                print(f"Geocoding new location: {location_name}")
+                location_obj = geolocator.geocode(location_name)
+                if location_obj:
+                    # Store with "lat" and "lon" keys to match the existing format
+                    locations_cache[location_name] = {
+                        'lat': location_obj.latitude,
+                        'lon': location_obj.longitude
+                    }
+                    cache_updated = True
+                    time.sleep(1.1)
+                    location = {'latitude': location_obj.latitude, 'longitude': location_obj.longitude}
+                else:
+                    location = None
+
+            if location:
+                event_markers.append({
+                    "title": event.title,
+                    "lat": location['latitude'],
+                    "lon": location['longitude'],
+                    "url": url_for('event_page', event_id=event.event_id)
+                })
+
+    finally:
+        # 2. Save the cache at the end of the request
+        if cache_updated:
+            with open(CACHE_FILE, 'w') as f:
+                json.dump(locations_cache, f)
+
+    return render_template("events_map.html", event_markers=event_markers)
+
 @app.route('/logout')
 @login_required
 def logout():

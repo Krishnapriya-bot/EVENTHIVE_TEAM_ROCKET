@@ -6,10 +6,10 @@
     <title>{{ 'Edit Event' if event else 'Create Event' }}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='create.css') }}">
-    
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4xn+L+Z9K3h2sP4xGf09n77/3o7lWf3xT7gG+3uA2uQ="
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
     crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.css" />
 </head>
 <body>
     <div class="container">
@@ -35,24 +35,22 @@
                         <div class="form-group">
                             <label>Event Name *</label>
                             <input type="text" name="title" required 
-                                   value="{{ event.title if event else '' }}"
-                                   placeholder="Enter event name">
+                                    value="{{ event.title if event else '' }}"
+                                    placeholder="Enter event name">
                         </div>
 
                         <div class="form-group">
                             <label>Description</label>
                             <textarea name="description" rows="4" 
-                                      placeholder="Describe your event...">{{ event.description if event else '' }}</textarea>
+                                        placeholder="Describe your event...">{{ event.description if event else '' }}</textarea>
                         </div>
                         
                         <div class="form-group">
                             <label>Location *</label>
-                            <input type="text" id="location_input" name="location" required 
-                                   value="{{ event.location if event else '' }}"
-                                   placeholder="Search for event venue or address">
-                            <div id="map-container" style="height: 400px; margin-top: 10px; border-radius: 8px;"></div>
-                            <input type="hidden" name="latitude" id="latitude" value="{{ event.latitude if event else '' }}">
-                            <input type="hidden" name="longitude" id="longitude" value="{{ event.longitude if event else '' }}">
+                            <input type="text" class="form-control" id="location" name="location" required 
+                                    value="{{ event.location if event else '' }}"
+                                    placeholder="Search for event venue or address">
+                            <div id="map" style="height: 400px; width: 100%; border-radius: 8px; margin-top: 10px;"></div>
                         </div>
 
                         <div class="form-group">
@@ -77,13 +75,15 @@
                             <div class="form-group">
                                 <label>Start Date & Time *</label>
                                 <input type="datetime-local" name="start_datetime" required 
-                                       value="{{ event.start_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}">
+                                        value="{{ event.start_datetime.strftime('%Y-%m-%dT%H:%M') if event and event.start_datetime else '' }}" required 
+                                min="{{ now.strftime('%Y-%m-%dT%H:%M') }}">
                             </div>
 
                             <div class="form-group">
                                 <label>End Date & Time *</label>
                                 <input type="datetime-local" name="end_datetime" required 
-                                       value="{{ event.end_datetime.strftime('%Y-%m-%dT%H:%M') if event else '' }}">
+                                value="{{ event.end_datetime.strftime('%Y-%m-%dT%H:%M') if event and event.end_datetime else '' }}" required
+                                min="{{ now.strftime('%Y-%m-%dT%H:%M') }}">
                             </div>
                         </div>
 
@@ -91,21 +91,22 @@
                             <div class="form-group">
                                 <label>Registration Start</label>
                                 <input type="datetime-local" name="registration_start"
-                                       value="{{ event.registration_start.strftime('%Y-%m-%dT%H:%M') if event and event.registration_start else '' }}">
+value="{{ event.registration_start.strftime('%Y-%m-%dT%H:%M') if event and event.registration_start else '' }}" 
+                                min="{{ now.strftime('%Y-%m-%dT%H:%M') }}">
                             </div>
-
                             <div class="form-group">
                                 <label>Registration End</label>
                                 <input type="datetime-local" name="registration_end"
-                                       value="{{ event.registration_end.strftime('%Y-%m-%dT%H:%M') if event and event.registration_end else '' }}">
+value="{{ event.registration_end.strftime('%Y-%m-%dT%H:%M') if event and event.registration_end else '' }}"
+                                min="{{ now.strftime('%Y-%m-%dT%H:%M') }}">
                             </div>
                         </div>
 
                         <div class="form-group">
                             <label>Maximum Attendees</label>
                             <input type="number" name="max_attendees" min="1"
-                                   value="{{ event.max_attendees if event and event.max_attendees else '' }}"
-                                   placeholder="Leave empty for unlimited">
+                                    value="{{ event.max_attendees if event and event.max_attendees else '' }}"
+                                    placeholder="Leave empty for unlimited">
                         </div>
                     </div>
                 </div>
@@ -177,7 +178,7 @@
                         <div class="checkbox-group">
                             <label class="checkbox-label">
                                 <input type="checkbox" name="publish" 
-                                       {{ 'checked' if event and event.status == 'published' else '' }}>
+                                        {{ 'checked' if event and event.status == 'published' else '' }}>
                                 <span>Publish Event</span>
                             </label>
                         </div>
@@ -212,11 +213,99 @@
     {% endwith %}
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-2aA4i+P2j2y+oF2+g4+wK4n2/wD3p4x82u+Vf3xT2iU="
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js"></script>
     
     <script>
         let ticketCount = 1;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Give the page a moment to fully render before initializing the map
+            setTimeout(function() {
+                initializeMap();
+            }, 200);
+        });
+
+        function initializeMap() {
+            const locationInput = document.getElementById('location');
+            const mapElement = document.getElementById('map');
+            
+            // Check if elements exist
+            if (!locationInput || !mapElement) {
+                console.error('Required elements not found');
+                return;
+            }
+
+            try {
+                // Initialize map with default view of India
+                const map = L.map('map').setView([20.9169, 79.9961], 5);
+
+                // Add OpenStreetMap tiles
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
+
+                let marker = null;
+                const geocoder = L.Control.Geocoder.nominatim();
+
+                // Check if there's a saved location from the server (for edit mode)
+                if (locationInput.value) {
+                    geocoder.geocode(locationInput.value, function(results) {
+                        if (results && results.length > 0) {
+                            const latlng = L.latLng(results[0].center.lat, results[0].center.lng);
+                            map.setView(latlng, 15);
+                            marker = L.marker(latlng).addTo(map);
+                            marker.bindPopup(results[0].name).openPopup();
+                        }
+                    });
+                }
+                
+                // Add a search control to the map
+                L.Control.geocoder({
+                    defaultMarkGeocode: false,
+                    geocoder: geocoder
+                }).on('markgeocode', function(e) {
+                    // Remove existing marker
+                    if (marker) {
+                        map.removeLayer(marker);
+                    }
+                    
+                    // Add new marker
+                    marker = L.marker(e.geocode.center).addTo(map);
+                    locationInput.value = e.geocode.name;
+                    marker.bindPopup(e.geocode.name).openPopup();
+                    
+                    // Center map on location
+                    map.setView(e.geocode.center, 15);
+                }).addTo(map);
+                
+                // Add click listener for reverse geocoding
+                map.on('click', function(e) {
+                    if (marker) {
+                        map.removeLayer(marker);
+                    }
+                    
+                    marker = L.marker(e.latlng).addTo(map);
+                    
+                    geocoder.reverse(e.latlng, map.options.crs.scale(map.getZoom()), function(results) {
+                        if (results && results.length > 0) {
+                            locationInput.value = results[0].name;
+                            marker.bindPopup(results[0].name).openPopup();
+                        } else {
+                            locationInput.value = `${e.latlng.lat.toFixed(6)}, ${e.latlng.lng.toFixed(6)}`;
+                            marker.bindPopup("Selected Location").openPopup();
+                        }
+                    });
+                });
+
+                console.log('Map initialized successfully');
+
+            } catch (error) {
+                console.error('Error initializing map:', error);
+            }
+        }
         
         function addTicketType() {
             const container = document.getElementById('ticket-container');
@@ -288,10 +377,18 @@
         document.querySelector('form').addEventListener('submit', function(e) {
             const startTime = new Date(document.querySelector('input[name="start_datetime"]').value);
             const endTime = new Date(document.querySelector('input[name="end_datetime"]').value);
+            const now = new Date();
             
+            // Check if the start time is in the past
+            if (startTime < now) {
+                e.preventDefault();
+                alert('Start time cannot be in the past.');
+                return false;
+            }
+
             if (endTime <= startTime) {
                 e.preventDefault();
-                alert('End time must be after start time');
+                alert('End time must be after start time.');
                 return false;
             }
             
@@ -301,6 +398,12 @@
             if (regStart && regEnd) {
                 const regStartTime = new Date(regStart);
                 const regEndTime = new Date(regEnd);
+
+                if (regStartTime < now) {
+                    e.preventDefault();
+                    alert('Registration start time cannot be in the past.');
+                    return false;
+                }
                 
                 if (regEndTime <= regStartTime) {
                     e.preventDefault();
@@ -315,56 +418,6 @@
                 }
             }
         });
-        
-        // Map Functionality
-        const locationInput = document.getElementById('location_input');
-        const latInput = document.getElementById('latitude');
-        const lonInput = document.getElementById('longitude');
-        const mapContainer = document.getElementById('map-container');
-        let map;
-        let marker;
-    
-        function initMap(lat, lon, zoom) {
-            map = L.map(mapContainer).setView([lat, lon], zoom);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
-            
-            marker = L.marker([lat, lon]).addTo(map);
-        }
-        
-        locationInput.addEventListener('change', function() {
-            const query = locationInput.value;
-            if (query) {
-                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length > 0) {
-                        const { lat, lon } = data[0];
-                        
-                        latInput.value = lat;
-                        lonInput.value = lon;
-                        
-                        if (!map) {
-                            initMap(lat, lon, 15);
-                        } else {
-                            map.setView([lat, lon], 15);
-                            marker.setLatLng([lat, lon]);
-                        }
-                    } else {
-                        alert("Location not found. Please try a different query.");
-                    }
-                })
-                .catch(error => {
-                    console.error('Error fetching location:', error);
-                    alert("An error occurred while searching for the location.");
-                });
-            }
-        });
-        
-        const initialLat = latInput.value || 28.7041;
-        const initialLon = lonInput.value || 77.1025;
-        initMap(initialLat, initialLon, latInput.value ? 15 : 5);
     </script>
 </body>
 </html>

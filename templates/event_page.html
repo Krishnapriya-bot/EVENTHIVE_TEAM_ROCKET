@@ -8,6 +8,15 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='screen3.css') }}"
     />
+    <style>
+      .event-image img {
+        max-width: 100%;
+        max-height: 180px;
+        object-fit: cover;
+        display: block;
+        margin: 0 auto;
+      }
+    </style>
   </head>
   <body>
     <!-- Header -->
@@ -26,9 +35,9 @@
         <div class="event-main">
           <div class="event-header">
             <div class="event-image">
-              {% if event.image_path %}
+              {% if event.image_url %}
               <img
-                src="{{ event.image_path }}"
+                src="{{ event.image_url }}"
                 alt="{{ event.title }}"
                 class="w-100 rounded"
               />
@@ -83,6 +92,12 @@
           <div class="location-section">
             <h3><span class="location-icon">📍</span> Location</h3>
             <div class="location-address">{{ event.location }}</div>
+            <div
+              id="map"
+              style="height: 200px; margin-top: 10px"
+              data-lat="{{ lat or 28.6139 }}"
+              data-lon="{{ lon or 77.2090 }}"
+            ></div>
           </div>
 
           <!-- Organizer Section -->
@@ -97,5 +112,24 @@
         </div>
       </div>
     </div>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const mapDiv = document.getElementById("map");
+      const lat = parseFloat(mapDiv.getAttribute("data-lat"));
+      const lon = parseFloat(mapDiv.getAttribute("data-lon"));
+
+      const map = L.map("map").setView([lat, lon], 15);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap contributors",
+      }).addTo(map);
+      L.marker([lat, lon])
+        .addTo(map)
+        .bindPopup(mapDiv.previousElementSibling.textContent.trim())
+        .openPopup();
+    </script>
   </body>
 </html>
