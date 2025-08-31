@@ -182,8 +182,9 @@ def register():
 
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
-            flash("Email already registered. Please login.")
-            return redirect(url_for('login'))
+           flash("Registration successful! Please login.")
+        return redirect(url_for("login"))
+
 
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
         new_user = User(name=name, email=email, phone=phone, role=role, password_hash=hashed_password)
