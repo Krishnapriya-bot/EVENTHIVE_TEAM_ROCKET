@@ -14,15 +14,15 @@
 
 ---
 
+
 ### 📹 Video Link:  
-### 📹 Video Link:  
-[Watch on Google Drive]([https://drive.google.com/file/d/your-video-id/view?usp=sharing](https://drive.google.com/drive/folders/11Rpkb4vuHWIgrqs4Smffz1xpPNa2nyD0?usp=sharing))
+[Watch on Google Drive](https://drive.google.com/file/d/your-video-id/view?usp=sharing](https://drive.google.com/drive/folders/11Rpkb4vuHWIgrqs4Smffz1xpPNa2nyD0?usp=sharing)
 
 
 ---
 
 ## 🎯 Objective  
-To build **EventHive**, a comprehensive event management platform where organizers can easily create, publish, and manage events with flexible ticketing and promotions, while attendees can seamlessly discover, register, pay, and receive tickets via Email/WhatsApp along with timely reminders and smooth check-in experiences.
+To build **EventHive**, a comprehensive event management platform where organizers can easily create, publish, and manage events with flexible ticketing and promotions, while attendees can seamlessly discover, register, pay, and receive tickets via Email along with timely reminders and smooth check-in experiences.
 
 ---
 
@@ -50,39 +50,25 @@ To build **EventHive**, a comprehensive event management platform where organize
    - Delivery via Email (PDF) or WhatsApp (link).  
    - Option to download from dashboard.  
 
-5. **Notifications & Reminders**  
-   - Booking confirmation via Email/WhatsApp.  
-   - Automated reminders (24 hrs & 1 hr before).  
-   - SMS/Push notification support.  
 
-6. **Organizer Dashboard**  
+5. **Organizer Dashboard**  
    - Manage events, ticket inventory, bookings.  
    - Real-time sales analytics & revenue tracking.  
-   - Export attendee list (CSV/Excel).  
-   - Role-based access (Admin, Manager, Volunteer).  
 
-7. **Attendee Dashboard**  
+
+6. **Attendee Dashboard**  
    - View “My Tickets” & booking history.  
    - Cancel booking (with refund policy).  
-   - Loyalty points & rewards.  
 
-8. **Discounts & Promotions**  
-   - Promo codes, coupons, early bird discounts.  
-   - Group offers (e.g., Buy 5, Get 1 Free).  
-   - Referral rewards for invites.  
-
-9. **Event Check-In System**  
+7. **Event Check-In System**  
    - QR/Barcode scanning for entry.  
    - Real-time validation (prevent duplicates).  
-   - Check-in stats for organizers.  
+   - Check-in stats for organizers.  (here when u scan the qr code via mobile it will show the page where you are successfully scanned the ticket - as our website is in local       server so the condition is the mobile and the pc/laptop should be connected to same wifi).
 
-10. **Analytics & Reports**  
+8. **Analytics & Reports**  
     - Track tickets sold, revenue earned, active attendees.  
     - Demographics insights (location, category).  
-    - Downloadable reports.  
 
 11. **Advanced Features**  
-    - Refund & Cancellation workflow.  
     - Social Media sharing (WhatsApp, Instagram, Facebook, Twitter).  
-    - Live Streaming support (Hybrid events).  
     - Map Mode (events shown as pins).  
